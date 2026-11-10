@@ -1,0 +1,22 @@
+# Dependencies — never commit node_modules
+node_modules/
+**/node_modules/
+
+# Environment files — contain secrets, each dev has their own
+.env
+**/.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker volumes (local data)
+*.db
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,185 @@
+version: '3.8'
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  mongo-users-data:
+  mongo-offres-data:
+  mongo-formations-data:
+  mongo-microprojets-data:
+  mongo-candidatures-data:
+
+services:
+  # ─── MongoDB Containers ───────────────────────────────────────────
+  mongo-users:
+    image: mongo:6
+    container_name: mongo-users
+    volumes:
+      - mongo-users-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  mongo-offres:
+    image: mongo:6
+    container_name: mongo-offres
+    volumes:
+      - mongo-offres-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  mongo-formations:
+    image: mongo:6
+    container_name: mongo-formations
+    volumes:
+      - mongo-formations-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  mongo-microprojets:
+    image: mongo:6
+    container_name: mongo-microprojets
+    volumes:
+      - mongo-microprojets-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  mongo-candidatures:
+    image: mongo:6
+    container_name: mongo-candidatures
+    volumes:
+      - mongo-candidatures-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ─── Application Services ─────────────────────────────────────────
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      MONGO_URI: mongodb://mongo-users:27017/users_db
+      JWT_SECRET: ${JWT_SECRET:-supersecret_jwt_key_change_in_prod}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-internal_service_token_change_in_prod}
+    depends_on:
+      - mongo-users
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  offre-service:
+    build:
+      context: ./offre-service
+      dockerfile: Dockerfile
+    container_name: offre-service
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      MONGO_URI: mongodb://mongo-offres:27017/offres_db
+      JWT_SECRET: ${JWT_SECRET:-supersecret_jwt_key_change_in_prod}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-internal_service_token_change_in_prod}
+      USER_SERVICE_URL: http://user-service:3001
+    depends_on:
+      - mongo-offres
+      - user-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  formation-service:
+    build:
+      context: ./formation-service
+      dockerfile: Dockerfile
+    container_name: formation-service
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      MONGO_URI: mongodb://mongo-formations:27017/formations_db
+      JWT_SECRET: ${JWT_SECRET:-supersecret_jwt_key_change_in_prod}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-internal_service_token_change_in_prod}
+      USER_SERVICE_URL: http://user-service:3001
+    depends_on:
+      - mongo-formations
+      - user-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  microprojet-service:
+    build:
+      context: ./microprojet-service
+      dockerfile: Dockerfile
+    container_name: microprojet-service
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+      MONGO_URI: mongodb://mongo-microprojets:27017/microprojets_db
+      JWT_SECRET: ${JWT_SECRET:-supersecret_jwt_key_change_in_prod}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-internal_service_token_change_in_prod}
+      USER_SERVICE_URL: http://user-service:3001
+    depends_on:
+      - mongo-microprojets
+      - user-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  candidature-service:
+    build:
+      context: ./candidature-service
+      dockerfile: Dockerfile
+    container_name: candidature-service
+    ports:
+      - "3005:3005"
+    environment:
+      PORT: 3005
+      MONGO_URI: mongodb://mongo-candidatures:27017/candidatures_db
+      JWT_SECRET: ${JWT_SECRET:-supersecret_jwt_key_change_in_prod}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-internal_service_token_change_in_prod}
+      USER_SERVICE_URL: http://user-service:3001
+      OFFRE_SERVICE_URL: http://offre-service:3002
+    depends_on:
+      - mongo-candidatures
+      - user-service
+      - offre-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-supersecret_jwt_key_change_in_prod}
+      USER_SERVICE_URL: http://user-service:3001
+      OFFRE_SERVICE_URL: http://offre-service:3002
+      FORMATION_SERVICE_URL: http://formation-service:3003
+      MICROPROJET_SERVICE_URL: http://microprojet-service:3004
+      CANDIDATURE_SERVICE_URL: http://candidature-service:3005
+    depends_on:
+      - user-service
+      - offre-service
+      - formation-service
+      - microprojet-service
+      - candidature-service
+    networks:
+      - microservices-network
+    restart: unless-stopped

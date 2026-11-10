@@ -1,0 +1,908 @@
+{
+  "info": {
+    "name": "Microservices Backend — Full Journey",
+    "_postman_id": "microservices-backend-collection",
+    "description": "End-to-end Postman collection covering all 5 microservices through the API Gateway.\n\nFlow:\n1. Register candidat + recruteur + formateur\n2. Login each → save tokens\n3. Offres → CRUD\n4. Recommandations\n5. Formations → CRUD + inscription\n6. Quizz → create + submit\n7. Domaines\n8. MicroProjets → create + rejoindre\n9. CV → create\n10. Candidatures → submit + update statut",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",        "value": "http://localhost:3000",  "type": "string" },
+    { "key": "tokenCandidat",  "value": "",                       "type": "string" },
+    { "key": "tokenRecruteur", "value": "",                       "type": "string" },
+    { "key": "tokenFormateur", "value": "",                       "type": "string" },
+    { "key": "candidatId",     "value": "",                       "type": "string" },
+    { "key": "recruteurId",    "value": "",                       "type": "string" },
+    { "key": "formateurId",    "value": "",                       "type": "string" },
+    { "key": "offreId",        "value": "",                       "type": "string" },
+    { "key": "formationId",    "value": "",                       "type": "string" },
+    { "key": "quizzId",        "value": "",                       "type": "string" },
+    { "key": "domaineId",      "value": "",                       "type": "string" },
+    { "key": "projetId",       "value": "",                       "type": "string" },
+    { "key": "cvId",           "value": "",                       "type": "string" },
+    { "key": "candidatureId",  "value": "",                       "type": "string" },
+    { "key": "avisId",         "value": "",                       "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "00 — Health Checks",
+      "item": [
+        {
+          "name": "Gateway Health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Gateway OK', () => pm.response.to.have.status(200));"] }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "01 — Auth: Register",
+      "item": [
+        {
+          "name": "Register Candidat",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Dupont\",\n  \"prenom\": \"Alice\",\n  \"email\": \"alice.dupont@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"candidat\",\n  \"competences\": [\"JavaScript\", \"Node.js\", \"MongoDB\", \"React\"]\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Register candidat 201', () => pm.response.to.have.status(201));",
+                "if (res.token) pm.collectionVariables.set('tokenCandidat', res.token);",
+                "if (res.user?.id) pm.collectionVariables.set('candidatId', res.user.id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Register Recruteur",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Martin\",\n  \"prenom\": \"Bob\",\n  \"email\": \"bob.martin@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"recruteur\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Register recruteur 201', () => pm.response.to.have.status(201));",
+                "if (res.token) pm.collectionVariables.set('tokenRecruteur', res.token);",
+                "if (res.user?.id) pm.collectionVariables.set('recruteurId', res.user.id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Register Formateur",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Leclerc\",\n  \"prenom\": \"Claire\",\n  \"email\": \"claire.leclerc@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"formateur\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Register formateur 201', () => pm.response.to.have.status(201));",
+                "if (res.token) pm.collectionVariables.set('tokenFormateur', res.token);",
+                "if (res.user?.id) pm.collectionVariables.set('formateurId', res.user.id);"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "02 — Auth: Login",
+      "item": [
+        {
+          "name": "Login Candidat",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice.dupont@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Login candidat 200', () => pm.response.to.have.status(200));",
+                "pm.test('Token present', () => pm.expect(res.token).to.be.a('string'));",
+                "if (res.token) pm.collectionVariables.set('tokenCandidat', res.token);",
+                "if (res.user?.id) pm.collectionVariables.set('candidatId', res.user.id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Login Recruteur",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"bob.martin@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Login recruteur 200', () => pm.response.to.have.status(200));",
+                "if (res.token) pm.collectionVariables.set('tokenRecruteur', res.token);",
+                "if (res.user?.id) pm.collectionVariables.set('recruteurId', res.user.id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Login Formateur",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"claire.leclerc@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Login formateur 200', () => pm.response.to.have.status(200));",
+                "if (res.token) pm.collectionVariables.set('tokenFormateur', res.token);",
+                "if (res.user?.id) pm.collectionVariables.set('formateurId', res.user.id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Login sans token → 401",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/{{candidatId}}"
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('No token = 401', () => pm.response.to.have.status(401));"] }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "03 — Users",
+      "item": [
+        {
+          "name": "Get Candidat by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/{{candidatId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get user 200', () => pm.response.to.have.status(200));",
+                "pm.test('Password not exposed', () => pm.expect(pm.response.json()).to.not.have.property('password'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Update Candidat competences",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/users/{{candidatId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenCandidat}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"competences\": [\"JavaScript\", \"Node.js\", \"MongoDB\", \"React\", \"Docker\"]\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Update user 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Create Avis",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/avis",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cibleId\": \"{{candidatId}}\",\n  \"note\": 4,\n  \"commentaire\": \"Très bon profil technique\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Avis created 201', () => pm.response.to.have.status(201));",
+                "if (res.avis?._id) pm.collectionVariables.set('avisId', res.avis._id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Get Avis for Candidat",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/avis/user/{{candidatId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Get avis 200', () => pm.response.to.have.status(200));"] }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "04 — Offres",
+      "item": [
+        {
+          "name": "Create Offre",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/offres",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Développeur Node.js Senior\",\n  \"description\": \"Rejoignez notre équipe pour développer des APIs REST à haute disponibilité.\",\n  \"domaine\": \"Développement Web\",\n  \"competencesRequises\": [\"JavaScript\", \"Node.js\", \"MongoDB\", \"Docker\"],\n  \"typeContrat\": \"CDI\",\n  \"localisation\": \"Paris, France\",\n  \"salaire\": 55000,\n  \"dateLimite\": \"2027-06-30T00:00:00.000Z\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Offre created 201', () => pm.response.to.have.status(201));",
+                "if (res.offre?._id) pm.collectionVariables.set('offreId', res.offre._id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Get All Offres",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/offres",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Get offres 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Get Offre by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/offres/{{offreId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Get offre 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Update Offre",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/offres/{{offreId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salaire\": 60000,\n  \"localisation\": \"Paris ou Remote\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Update offre 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Candidat cannot create offre → 403",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/offres",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenCandidat}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"titre\": \"Test\", \"typeContrat\": \"CDI\" }"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Candidat blocked 403', () => pm.response.to.have.status(403));"] }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "05 — Recommandations",
+      "item": [
+        {
+          "name": "Generate Recommandations",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/recommandations/generate/{{offreId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Recommandations generated 200', () => pm.response.to.have.status(200));",
+                "const res = pm.response.json();",
+                "pm.test('Has recommandations array', () => pm.expect(res.recommandations).to.be.an('array'));",
+                "pm.test('Sorted by score desc', () => {",
+                "  const scores = res.recommandations.map(r => r.score);",
+                "  for (let i = 0; i < scores.length - 1; i++) {",
+                "    pm.expect(scores[i]).to.be.at.least(scores[i + 1]);",
+                "  }",
+                "});"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Get Recommandations for Offre",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/recommandations/offre/{{offreId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Get recommandations 200', () => pm.response.to.have.status(200));"] }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "06 — Formations",
+      "item": [
+        {
+          "name": "Create Formation",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/formations",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenFormateur}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Node.js & Express — Du débutant à l'expert\",\n  \"description\": \"Apprenez à construire des APIs REST robustes avec Node.js et Express.\",\n  \"categorie\": \"Développement Web\",\n  \"niveau\": \"intermédiaire\",\n  \"duree\": \"20h\",\n  \"contenu\": [\"Introduction à Node.js\", \"Express et routing\", \"MongoDB avec Mongoose\", \"JWT et sécurité\", \"Docker\"]\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Formation created 201', () => pm.response.to.have.status(201));",
+                "if (res.formation?._id) pm.collectionVariables.set('formationId', res.formation._id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Get All Formations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/formations",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Get formations 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Inscrire Candidat à Formation",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/formations/{{formationId}}/inscrire",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Inscription 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Duplicate inscription → 409",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/formations/{{formationId}}/inscrire",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Duplicate inscription 409', () => pm.response.to.have.status(409));"] }
+          }]
+        },
+        {
+          "name": "Get Inscrits",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/formations/{{formationId}}/inscrits",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenFormateur}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get inscrits 200', () => pm.response.to.have.status(200));",
+                "pm.test('Candidat is enrolled', () => {",
+                "  const res = pm.response.json();",
+                "  pm.expect(res.inscrits).to.include(pm.collectionVariables.get('candidatId'));",
+                "});"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "07 — Quizz",
+      "item": [
+        {
+          "name": "Create Quizz",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/quizz",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenFormateur}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formationId\": \"{{formationId}}\",\n  \"titre\": \"Évaluation Node.js\",\n  \"dureeMax\": 30,\n  \"questions\": [\n    {\n      \"enonce\": \"Quelle est la commande pour initialiser un projet Node.js ?\",\n      \"choix\": [\"node init\", \"npm init\", \"node start\", \"npm start\"],\n      \"bonneReponse\": \"npm init\",\n      \"points\": 2\n    },\n    {\n      \"enonce\": \"Quel module gère les routes dans Express ?\",\n      \"choix\": [\"express.Router()\", \"express.Route()\", \"express.Path()\", \"express.Handler()\"],\n      \"bonneReponse\": \"express.Router()\",\n      \"points\": 3\n    },\n    {\n      \"enonce\": \"Quel est le port par défaut de MongoDB ?\",\n      \"choix\": [\"27017\", \"3306\", \"5432\", \"6379\"],\n      \"bonneReponse\": \"27017\",\n      \"points\": 1\n    }\n  ]\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Quizz created 201', () => pm.response.to.have.status(201));",
+                "if (res.quizz?._id) pm.collectionVariables.set('quizzId', res.quizz._id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Get Quizz by Formation",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/quizz/formation/{{formationId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Get quizz 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Submit Quizz (all correct)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/quizz/{{quizzId}}/submit",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenCandidat}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reponses\": [\"npm init\", \"express.Router()\", \"27017\"]\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Submit quizz 200', () => pm.response.to.have.status(200));",
+                "const res = pm.response.json();",
+                "pm.test('Score is 100%', () => pm.expect(res.pourcentage).to.equal(100));",
+                "pm.test('Mention is Excellent', () => pm.expect(res.mention).to.equal('Excellent'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Submit Quizz (partial answers)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/quizz/{{quizzId}}/submit",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenCandidat}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reponses\": [\"npm init\", \"express.Route()\", \"3306\"]\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Partial submit 200', () => pm.response.to.have.status(200));",
+                "const res = pm.response.json();",
+                "pm.test('Score < 100', () => pm.expect(res.pourcentage).to.be.below(100));",
+                "pm.test('Details array present', () => pm.expect(res.details).to.be.an('array').with.lengthOf(3));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "08 — Domaines",
+      "item": [
+        {
+          "name": "Get All Domaines",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/domaines",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get domaines 200', () => pm.response.to.have.status(200));",
+                "const res = pm.response.json();",
+                "pm.test('At least 10 domaines seeded', () => pm.expect(res.total).to.be.at.least(10));",
+                "if (res.domaines?.length > 0) pm.collectionVariables.set('domaineId', res.domaines[0]._id);"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "09 — MicroProjets",
+      "item": [
+        {
+          "name": "Create MicroProjet",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/microprojets",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Plateforme e-learning open-source\",\n  \"description\": \"Construire une plateforme de cours en ligne avec Node.js, React et MongoDB.\",\n  \"domaineId\": \"{{domaineId}}\",\n  \"competencesRequises\": [\"JavaScript\", \"Node.js\", \"React\"],\n  \"budget\": 5000\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('MicroProjet created 201', () => pm.response.to.have.status(201));",
+                "if (res.projet?._id) pm.collectionVariables.set('projetId', res.projet._id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Get All MicroProjets",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/microprojets",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Get microprojets 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Rejoindre MicroProjet",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/microprojets/{{projetId}}/rejoindre",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Rejoindre 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Duplicate rejoindre → 409",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/microprojets/{{projetId}}/rejoindre",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Duplicate rejoindre 409', () => pm.response.to.have.status(409));"] }
+          }]
+        },
+        {
+          "name": "Get Participants",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/microprojets/{{projetId}}/participants",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get participants 200', () => pm.response.to.have.status(200));",
+                "pm.test('Candidat is participant', () => {",
+                "  const res = pm.response.json();",
+                "  pm.expect(res.participants).to.include(pm.collectionVariables.get('candidatId'));",
+                "});"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "10 — CVs",
+      "item": [
+        {
+          "name": "Create CV",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/cvs",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenCandidat}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"CV Alice Dupont — Développeuse Node.js\",\n  \"experiences\": [\n    {\n      \"poste\": \"Développeuse Backend\",\n      \"entreprise\": \"TechCorp\",\n      \"dateDebut\": \"2022-01-01\",\n      \"dateFin\": \"2024-06-30\",\n      \"description\": \"Développement d'APIs REST avec Node.js et PostgreSQL\"\n    }\n  ],\n  \"formations\": [\n    {\n      \"diplome\": \"Master Informatique\",\n      \"etablissement\": \"Université Paris-Saclay\",\n      \"annee\": 2021\n    }\n  ],\n  \"competences\": [\"JavaScript\", \"Node.js\", \"MongoDB\", \"React\", \"Docker\"],\n  \"langues\": [\"Français\", \"Anglais\", \"Arabe\"]\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('CV created 201', () => pm.response.to.have.status(201));",
+                "if (res.cv?._id) pm.collectionVariables.set('cvId', res.cv._id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Get CVs by User",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cvs/user/{{candidatId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get CVs 200', () => pm.response.to.have.status(200));",
+                "pm.test('At least 1 CV', () => pm.expect(pm.response.json().total).to.be.at.least(1));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "11 — Candidatures",
+      "item": [
+        {
+          "name": "Submit Candidature",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/candidatures",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenCandidat}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offreId\": \"{{offreId}}\",\n  \"cvId\": \"{{cvId}}\",\n  \"lettreMotivation\": \"Bonjour, je suis très intéressée par ce poste. Mon expérience en Node.js et MongoDB correspond parfaitement à vos besoins.\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "pm.test('Candidature submitted 201', () => pm.response.to.have.status(201));",
+                "if (res.candidature?._id) pm.collectionVariables.set('candidatureId', res.candidature._id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Duplicate Candidature → 409",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/candidatures",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenCandidat}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offreId\": \"{{offreId}}\",\n  \"cvId\": \"{{cvId}}\",\n  \"lettreMotivation\": \"Deuxième tentative\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Duplicate candidature 409', () => pm.response.to.have.status(409));"] }
+          }]
+        },
+        {
+          "name": "Get Candidatures by Candidat",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/candidatures/candidat/{{candidatId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCandidat}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get candidatures 200', () => pm.response.to.have.status(200));",
+                "pm.test('At least 1 candidature', () => pm.expect(pm.response.json().total).to.be.at.least(1));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Get Candidatures by Offre (recruteur)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/candidatures/offre/{{offreId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" }]
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Get by offre 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "Update Statut to 'vue' (recruteur)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/candidatures/{{candidatureId}}/statut",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"statut\": \"vue\" }"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Update statut 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut is vue', () => pm.expect(pm.response.json().candidature.statut).to.equal('vue'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Update Statut to 'acceptée' (recruteur)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/candidatures/{{candidatureId}}/statut",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenRecruteur}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"statut\": \"acceptée\" }"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Acceptée 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut is acceptée', () => pm.expect(pm.response.json().candidature.statut).to.equal('acceptée'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Candidat cannot update statut → 403",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/candidatures/{{candidatureId}}/statut",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenCandidat}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"statut\": \"rejetée\" }"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Candidat blocked 403', () => pm.response.to.have.status(403));"] }
+          }]
+        }
+      ]
+    }
+  ]
+}

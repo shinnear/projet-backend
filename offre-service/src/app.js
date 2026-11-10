@@ -1,0 +1,36 @@
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+
+const offreRoutes = require('./routes/offreRoutes');
+const recommandationRoutes = require('./routes/recommandationRoutes');
+const internalRoutes = require('./routes/internalRoutes');
+
+const app = express();
+
+app.use(cors());
+app.use(morgan('dev'));
+app.use(express.json());
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'offre-service' });
+});
+
+// Routes
+app.use('/', offreRoutes);
+app.use('/', recommandationRoutes);
+app.use('/', internalRoutes);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({ message: err.message || 'Internal server error' });
+});
+
+module.exports = app;
