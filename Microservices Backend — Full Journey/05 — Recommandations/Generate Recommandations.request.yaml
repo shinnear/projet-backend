@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{baseUrl}}/api/recommandations/generate/{{offreId}}"
+method: POST
+headers:
+  Authorization: Bearer {{tokenRecruteur}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Recommandations generated 200', () => pm.response.to.have.status(200));
+      const res = pm.response.json();
+      pm.test('Has recommandations array', () => pm.expect(res.recommandations).to.be.an('array'));
+      pm.test('Sorted by score desc', () => {
+        const scores = res.recommandations.map(r => r.score);
+        for (let i = 0; i < scores.length - 1; i++) {
+          pm.expect(scores[i]).to.be.at.least(scores[i + 1]);
+        }
+      });
+order: 1000

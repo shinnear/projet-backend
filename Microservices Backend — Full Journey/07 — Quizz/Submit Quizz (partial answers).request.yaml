@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/quizz/{{quizzId}}/submit"
+method: POST
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "reponses": ["npm init", "express.Route()", "3306"]
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Partial submit 200', () => pm.response.to.have.status(200));
+      const res = pm.response.json();
+      pm.test('Score < 100', () => pm.expect(res.pourcentage).to.be.below(100));
+      pm.test('Details array present', () => pm.expect(res.details).to.be.an('array').with.lengthOf(3));
+order: 4000

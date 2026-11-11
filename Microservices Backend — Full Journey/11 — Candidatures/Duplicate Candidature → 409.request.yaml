@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{baseUrl}}/api/candidatures"
+method: POST
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "offreId": "{{offreId}}",
+      "cvId": "{{cvId}}",
+      "lettreMotivation": "Deuxième tentative"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Duplicate candidature 409', () => pm.response.to.have.status(409));
+order: 2000

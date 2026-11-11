@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "nom": "Leclerc",
+      "prenom": "Claire",
+      "email": "claire.leclerc@example.com",
+      "password": "password123",
+      "role": "formateur"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const res = pm.response.json();
+      pm.test('Register formateur 201', () => pm.response.to.have.status(201));
+      if (res.token) pm.collectionVariables.set('tokenFormateur', res.token);
+      if (res.user?.id) pm.collectionVariables.set('formateurId', res.user.id);
+order: 3000

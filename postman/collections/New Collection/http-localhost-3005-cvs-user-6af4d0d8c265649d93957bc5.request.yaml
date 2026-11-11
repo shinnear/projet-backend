@@ -1,0 +1,10 @@
+$kind: http-request
+name: http://localhost:3005/cvs/user/6af4d0d8c265649d93957bc5
+description: ""
+url: http://localhost:3005/cvs/user/6af4d0d8c265649d93957bc5
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_0kw7}}"
+order: 2000

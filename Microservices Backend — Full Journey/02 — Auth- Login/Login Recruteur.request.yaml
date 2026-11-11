@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "bob.martin@example.com",
+      "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const res = pm.response.json();
+      pm.test('Login recruteur 200', () => pm.response.to.have.status(200));
+      if (res.token) pm.collectionVariables.set('tokenRecruteur', res.token);
+      if (res.user?.id) pm.collectionVariables.set('recruteurId', res.user.id);
+order: 2000

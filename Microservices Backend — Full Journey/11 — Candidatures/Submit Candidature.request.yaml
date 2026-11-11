@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{baseUrl}}/api/candidatures"
+method: POST
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "offreId": "{{offreId}}",
+      "cvId": "{{cvId}}",
+      "lettreMotivation": "Bonjour, je suis très intéressée par ce poste. Mon expérience en Node.js et MongoDB correspond parfaitement à vos besoins."
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const res = pm.response.json();
+      pm.test('Candidature submitted 201', () => pm.response.to.have.status(201));
+      if (res.candidature?._id) pm.collectionVariables.set('candidatureId', res.candidature._id);
+order: 1000

@@ -1,0 +1,19 @@
+$kind: http-request
+name: http://localhost:3005/cvs/6af4d85ff8533c013fd9f119
+description: ""
+url: http://localhost:3005/cvs/6af4d85ff8533c013fd9f119
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"titre\": \"CV de Yassine — Backend\",\r
+
+    \  \"candidatId\": \"autre-candidat\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_0kw7}}"
+order: 3000

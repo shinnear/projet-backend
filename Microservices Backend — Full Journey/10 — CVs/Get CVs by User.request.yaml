@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{baseUrl}}/api/cvs/user/{{candidatId}}"
+method: GET
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Get CVs 200', () => pm.response.to.have.status(200));
+      pm.test('At least 1 CV', () => pm.expect(pm.response.json().total).to.be.at.least(1));
+order: 2000

@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: 0179399c-ba89-44ea-9703-4facebf0a54a
+
+localResources:
+  collections:
+    - ../Microservices Backend — Full Journey
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../Microservices Backend — Full Journey: microservices-backend-collection

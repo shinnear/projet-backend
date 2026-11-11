@@ -6,6 +6,16 @@ const CV = require('../models/CV');
  */
 const createCV = async (req, res) => {
   try {
+
+//controle saisie
+    const { titre } = req.body;
+
+if (typeof titre !== 'string' || titre.trim() === '') {
+  return res.status(400).json({
+    message: 'Le titre du CV est obligatoire'
+  });
+}
+
     const cv = await CV.create({ ...req.body, candidatId: req.user.id });
     res.status(201).json({ message: 'CV créé avec succès', cv });
   } catch (err) {
@@ -19,6 +29,11 @@ const createCV = async (req, res) => {
  */
 const getCVsByUser = async (req, res) => {
   try {
+    if (req.params.userId !== req.user.id) {
+  return res.status(403).json({
+    message: 'Vous ne pouvez consulter que vos propres CVs'
+  });
+}
     const cvs = await CV.find({ candidatId: req.params.userId }).sort({ createdAt: -1 });
     res.json({ total: cvs.length, cvs });
   } catch (err) {
@@ -52,6 +67,19 @@ const getCVById = async (req, res) => {
  */
 const updateCV = async (req, res) => {
   try {
+
+    //controle saisie 
+    const { titre } = req.body;
+
+if (
+  titre !== undefined &&
+  (typeof titre !== 'string' || titre.trim() === '')
+) {
+  return res.status(400).json({
+    message: 'Le titre du CV ne peut pas être vide'
+  });
+}
+
     const cv = await CV.findById(req.params.id);
     if (!cv) return res.status(404).json({ message: 'CV non trouvé' });
 
@@ -59,10 +87,32 @@ const updateCV = async (req, res) => {
       return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres CVs' });
     }
 
-    const updated = await CV.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const champsAutorises = [
+  'titre',
+  'experiences',
+  'formations',
+  'competences',
+  'langues',
+  'lienLinkedin'
+];
+
+const modifications = {};
+
+for (const champ of champsAutorises) {
+  if (req.body[champ] !== undefined) {
+    modifications[champ] = req.body[champ];
+  }
+}
+
+const updated = await CV.findByIdAndUpdate(
+  req.params.id,
+  { $set: modifications },
+  {
+    new: true,
+    runValidators: true
+  }
+);
+
     res.json({ message: 'CV mis à jour', cv: updated });
   } catch (err) {
     res.status(500).json({ message: err.message });

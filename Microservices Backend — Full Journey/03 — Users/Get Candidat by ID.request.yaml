@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{baseUrl}}/api/users/{{candidatId}}"
+method: GET
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Get user 200', () => pm.response.to.have.status(200));
+      pm.test('Password not exposed', () => pm.expect(pm.response.json()).to.not.have.property('password'));
+order: 1000

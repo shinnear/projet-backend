@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{baseUrl}}/health"
+method: GET
+scripts:
+  - type: afterResponse
+    code: pm.test('Gateway OK', () => pm.response.to.have.status(200));
+order: 1000

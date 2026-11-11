@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{baseUrl}}/api/offres"
+method: POST
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{ "titre": "Test", "typeContrat": "CDI" }'
+scripts:
+  - type: afterResponse
+    code: pm.test('Candidat blocked 403', () => pm.response.to.have.status(403));
+order: 5000

@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{baseUrl}}/api/users/{{candidatId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "competences": ["JavaScript", "Node.js", "MongoDB", "React", "Docker"]
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Update user 200', () => pm.response.to.have.status(200));
+order: 2000

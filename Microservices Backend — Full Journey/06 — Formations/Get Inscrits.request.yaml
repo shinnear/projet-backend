@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{baseUrl}}/api/formations/{{formationId}}/inscrits"
+method: GET
+headers:
+  Authorization: Bearer {{tokenFormateur}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Get inscrits 200', () => pm.response.to.have.status(200));
+      pm.test('Candidat is enrolled', () => {
+        const res = pm.response.json();
+        pm.expect(res.inscrits).to.include(pm.collectionVariables.get('candidatId'));
+      });
+order: 5000

@@ -1,0 +1,26 @@
+$kind: http-request
+url: "{{baseUrl}}/api/offres"
+method: POST
+headers:
+  Authorization: Bearer {{tokenRecruteur}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "titre": "Développeur Node.js Senior",
+      "description": "Rejoignez notre équipe pour développer des APIs REST à haute disponibilité.",
+      "domaine": "Développement Web",
+      "competencesRequises": ["JavaScript", "Node.js", "MongoDB", "Docker"],
+      "typeContrat": "CDI",
+      "localisation": "Paris, France",
+      "salaire": 55000,
+      "dateLimite": "2027-06-30T00:00:00.000Z"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const res = pm.response.json();
+      pm.test('Offre created 201', () => pm.response.to.have.status(201));
+      if (res.offre?._id) pm.collectionVariables.set('offreId', res.offre._id);
+order: 1000

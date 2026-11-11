@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{baseUrl}}/api/domaines"
+method: GET
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Get domaines 200', () => pm.response.to.have.status(200));
+      const res = pm.response.json();
+      pm.test('At least 10 domaines seeded', () => pm.expect(res.total).to.be.at.least(10));
+      if (res.domaines?.length > 0) pm.collectionVariables.set('domaineId', res.domaines[0]._id);
+order: 1000

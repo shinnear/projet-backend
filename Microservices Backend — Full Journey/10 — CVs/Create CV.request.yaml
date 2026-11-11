@@ -1,0 +1,37 @@
+$kind: http-request
+url: "{{baseUrl}}/api/cvs"
+method: POST
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "titre": "CV Alice Dupont — Développeuse Node.js",
+      "experiences": [
+        {
+          "poste": "Développeuse Backend",
+          "entreprise": "TechCorp",
+          "dateDebut": "2022-01-01",
+          "dateFin": "2024-06-30",
+          "description": "Développement d'APIs REST avec Node.js et PostgreSQL"
+        }
+      ],
+      "formations": [
+        {
+          "diplome": "Master Informatique",
+          "etablissement": "Université Paris-Saclay",
+          "annee": 2021
+        }
+      ],
+      "competences": ["JavaScript", "Node.js", "MongoDB", "React", "Docker"],
+      "langues": ["Français", "Anglais", "Arabe"]
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const res = pm.response.json();
+      pm.test('CV created 201', () => pm.response.to.have.status(201));
+      if (res.cv?._id) pm.collectionVariables.set('cvId', res.cv._id);
+order: 1000

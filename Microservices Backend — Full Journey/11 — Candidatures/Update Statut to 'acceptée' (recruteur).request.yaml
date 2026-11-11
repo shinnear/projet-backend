@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{baseUrl}}/api/candidatures/{{candidatureId}}/statut"
+method: PUT
+headers:
+  Authorization: Bearer {{tokenRecruteur}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{ "statut": "acceptée" }'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Acceptée 200', () => pm.response.to.have.status(200));
+      pm.test('Statut is acceptée', () => pm.expect(pm.response.json().candidature.statut).to.equal('acceptée'));
+order: 6000

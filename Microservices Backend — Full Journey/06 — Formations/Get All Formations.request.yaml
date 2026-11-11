@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{baseUrl}}/api/formations"
+method: GET
+headers:
+  Authorization: Bearer {{tokenCandidat}}
+scripts:
+  - type: afterResponse
+    code: pm.test('Get formations 200', () => pm.response.to.have.status(200));
+order: 2000
