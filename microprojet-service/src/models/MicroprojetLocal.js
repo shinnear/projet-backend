@@ -28,7 +28,49 @@ const microprojetSchema = new mongoose.Schema({
   dateCreation: {
     type: Date,
     default: Date.now
+  },
+
+
+scoreEcologique: {
+  type: Number,
+  min: 0,
+  max: 100,
+  default: null
+},
+
+niveauEcologique: {
+  type: String,
+  enum: [
+    "Impact écologique faible",
+    "Impact écologique modéré",
+    "Impact écologique élevé"
+  ],
+  default: null
+},
+
+detailODD: {
+  odd8: {
+    type: Number,
+    min: 0,
+    max: 20
+  },
+  odd9: {
+    type: Number,
+    min: 0,
+    max: 20
+  },
+  odd12: {
+    type: Number,
+    min: 0,
+    max: 30
+  },
+  odd13: {
+    type: Number,
+    min: 0,
+    max: 30
   }
+}
+
 });
 
 

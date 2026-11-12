@@ -177,6 +177,55 @@ const evaluerScoreEcologique = async (req, res) => {
 };
 
 
+const enregistrerScoreEcologique = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que le microprojet existe
+    const microprojet = await Microprojet.findById(id);
+
+    if (!microprojet) {
+      return res.status(404).json({
+        message: "Microprojet introuvable"
+      });
+    }
+
+    // Calculer le score à partir des critères
+    const resultat = calculerScoreEcologique(req.body);
+
+    // Enregistrer les résultats dans le microprojet
+    microprojet.scoreEcologique = resultat.scoreTotal;
+    microprojet.niveauEcologique = resultat.niveau;
+    microprojet.detailODD = resultat.detailODD;
+
+    await microprojet.save();
+
+    return res.status(200).json({
+      message: "Score écologique enregistré avec succès",
+      microprojet
+    });
+
+  } catch (error) {
+    // Identifiant MongoDB incorrect
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        message: "Identifiant du microprojet invalide"
+      });
+    }
+
+    // Erreur de validation des critères
+    if (error.message.startsWith("Score invalide")) {
+      return res.status(400).json({
+        message: error.message
+      });
+    }
+
+    return res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
 // Exporter les fonctions
 module.exports = {
   addMicroprojet,
@@ -185,6 +234,7 @@ module.exports = {
   updateMicroprojet,
   deleteMicroprojet,
   verifierDoublons,
-  evaluerScoreEcologique
+  evaluerScoreEcologique,
+  enregistrerScoreEcologique
 
 };
