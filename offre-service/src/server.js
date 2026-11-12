@@ -17,3 +17,14 @@ mongoose
     console.error('[offre-service] MongoDB connection error:', err.message);
     process.exit(1);
   });
+const Offre = require('./models/Offre');
+
+const closeExpired = async () => {
+  const r = await Offre.updateMany(
+    { statut: 'active', dateLimite: { $lt: new Date() } },
+    { statut: 'fermée' }
+  );
+  if (r.modifiedCount) console.log(`[offre-service] ${r.modifiedCount} offre(s) expirée(s) fermée(s)`);
+};
+closeExpired();
+setInterval(closeExpired, 60 * 60 * 1000);   // toutes les heures

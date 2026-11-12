@@ -58,5 +58,8 @@ offreSchema.index({ statut: 1 });
 offreSchema.index({ domaine: 1 });
 offreSchema.index({ recruteurId: 1 });
 offreSchema.index({ typeContrat: 1 });
-
+offreSchema.index({ localisation: 1 });
+offreSchema.index({ salaire: 1 });
+offreSchema.index({ dateLimite: 1, statut: 1 });
+offreSchema.index({ datePublication: -1 });
 module.exports = mongoose.model('Offre', offreSchema);
