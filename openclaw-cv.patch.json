@@ -1,0 +1,14 @@
+{
+  "gateway": {
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "tools": {
+    "deny": ["*"]
+  }
+}
