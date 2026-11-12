@@ -1,0 +1,20 @@
+$kind: http-request
+description: "HTTP attendu : 401. "
+url: "{{fj_user_url}}/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{fj_c1_email}}",
+      "password": "Incorrect-123!"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 401", () => { pm.response.to.have.status(401); });
+    language: text/javascript
+order: 10000

@@ -1,0 +1,14 @@
+$kind: http-request
+name: "Autre candidat interdit : POST /cvs/{{fj_cv}}/analyse"
+description: "HTTP attendu : 403. "
+url: "{{fj_candidature_url}}/cvs/{{fj_cv}}/analyse"
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c2_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 403", () => { pm.response.to.have.status(403); });
+    language: text/javascript
+order: 19000

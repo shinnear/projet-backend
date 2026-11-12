@@ -1,0 +1,4 @@
+$kind: collection
+name: "06 — Candidatures : validations et création"
+description: "Quatre soumissions réussies sur le parcours (avec la nouvelle soumission après retrait) et trois changements de statut : jusqu’à sept emails vers fj_notification_email. L’acceptation SMTP est testée ; la réception se vérifie dans la boîte mail."
+order: 7000

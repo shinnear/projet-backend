@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  Étape 23/34.
+
+  Montrer les étapes envoyée → vue → acceptée, les dates et les auteurs.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/candidatures/{{fj_app_a}}"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.historiqueStatuts.map(x=>x.statut)", () => { pm.expect(j.historiqueStatuts.map(x=>x.statut)).to.eql(["envoyée", "vue", "acceptée"]); });
+      pm.test("Auteurs de l\u2019historique", () => { pm.expect(j.historiqueStatuts[0].auteurId).to.eql(pm.variables.get("fj_c1_id")); pm.expect(j.historiqueStatuts[1].auteurId).to.eql(pm.variables.get("fj_r1_id")); });
+
+      }
+    language: text/javascript
+order: 5000

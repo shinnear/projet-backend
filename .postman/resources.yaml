@@ -11,3 +11,5 @@ localResources:
 cloudResources:
   collections:
     ../Microservices Backend — Full Journey: microservices-backend-collection
+    ../postman/collections/Microservices Backend — Full Journey — Gestion CV & Candidat: e28554ac-7bb8-40d8-a415-632dab934949
+    ../postman/collections/Microservices Backend — Full Journey — Démonstration profes: aadf1923-e3cd-413a-b128-69b92767e6ad

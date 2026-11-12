@@ -1,0 +1,3 @@
+$kind: collection
+description: Exécuter la collection entière, une seule itération. Le premier appel réinitialise les identifiants de test. Les comptes et données portent un suffixe unique à chaque exécution.
+order: 1000

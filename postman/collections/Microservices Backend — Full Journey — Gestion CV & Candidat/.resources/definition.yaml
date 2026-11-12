@@ -1,0 +1,84 @@
+$kind: collection
+name: Microservices Backend — Full Journey — Gestion CV & Candidatures
+description: |
+  Collection autonome pour la gestion CV + candidatures de la branche feature/gestion-condidature.
+
+  MODE D’EMPLOI
+  1. Démarrer Docker et reconstruire candidature-service après copie des derniers fichiers.
+  2. Démarrer OpenClaw (analyse IA). Vérifier les variables MAIL_USER, MAIL_PASS et OPENCLAW dans Docker.
+  3. Importer ce fichier dans Postman. Sélectionner No Environment pour éviter des variables anciennes.
+  4. Collection > Variables : remplir seulement fj_notification_email avec votre propre adresse de réception. Aucun JWT ni identifiant à copier.
+  5. Settings > General > Request timeout : 180000 ms (ou 0). Ne pas imposer un timeout de script inférieur à 65 s si votre Runner propose ce réglage.
+  6. Run collection : sélectionner tous les dossiers, conserver l’ordre, 1 itération, délai 100 ms, exécution locale avec l’application Postman/Desktop Agent.
+
+  PORTÉE
+  CV CRUD, validation, confidentialité, PDF ; IA et cache/invalidation ; candidatures, doublons, refus d’accès, pagination, filtres (sans recherche textuelle), statuts et historique, emails, retrait, statistiques et passage par API Gateway.
+  Cette collection vérifie votre gestion, pas les formations/quizz/microprojets des autres modules. Elle crée les utilisateurs et offres nécessaires.
+
+  VERSION CIBLÉE
+  Inclut les derniers fichiers fournis dans la conversation : candidatureUtils.js, notificationStatutService.js, listeCVController.js et routes/statistiques/historique associés. La version publiée sur GitHub consultée le 12/11/2026 ne contient pas encore toutes ces additions. Un 404 ou un test rouge sur ces étapes signale notamment que ces fichiers ne sont pas encore installés/reconstruits ; ces tests ne sont pas désactivés pour masquer le problème.
+
+  EXÉCUTION
+  Comptes et objets uniques à chaque Run. Les tokens et identifiants sont récupérés automatiquement. Les statuts 400/401/403/404/409 sont attendus sur les tests négatifs : consulter les assertions, pas seulement la couleur HTTP.
+  Jusqu’à 7 emails au destinataire choisi. Le test vérifie emailEnvoye=true (acceptation du serveur SMTP), pas la réception finale : contrôler également la boîte mail et les spams.
+  Deux vrais appels IA. L’attente restante entre appels est automatique. fj_run_ai=false saute uniquement les appels IA et filtres dépendants ; le parcours n’a alors PAS validé l’IA.
+  Les erreurs de création des prérequis arrêtent le Runner. Les autres échecs restent visibles pour le diagnostic.
+
+  DONNÉES CONSERVÉES
+  Les suppressions portent seulement sur les objets créés ici. Quatre comptes de test et deux candidatures finales avec CV/offres restent pour consultation. Chaque relance en ajoute de nouveaux ; aucune base n’est remise à zéro. Un nom préfixé Journey permet de les repérer.
+  Les pannes SMTP/OpenClaw, courses concurrentes et indisponibilités de services nécessitent des scénarios séparés : ce parcours ne stoppe pas les services ni ne modifie leur configuration.
+
+  VALIDATION DU LIVRABLE
+  JSON et scripts vérifiés localement. L’API sur votre localhost n’est pas accessible depuis cette session : seul votre Run pourra confirmer le résultat réel.
+  Source des routes : https://github.com/shinnear/projet-backend/tree/feature/gestion-condidature + derniers fichiers de cette conversation.
+  Documentation Runner : https://learning.postman.com/docs/tests-and-scripts/running-collections/intro-to-collection-runs/
+variables:
+  fj_user_url: http://localhost:3001
+  fj_offre_url: http://localhost:3002
+  fj_candidature_url: http://localhost:3005
+  fj_gateway_url: http://localhost:3000
+  fj_notification_email: ""
+  fj_run_ai: "true"
+  fj_password: JourneyTest2026!
+  fj_ai_date: ""
+  fj_ai_last_start: ""
+  fj_app_a: ""
+  fj_app_b: ""
+  fj_app_c: ""
+  fj_app_c2: ""
+  fj_c1_email: ""
+  fj_c1_id: ""
+  fj_c1_token: ""
+  fj_c2_email: ""
+  fj_c2_id: ""
+  fj_c2_token: ""
+  fj_closed: ""
+  fj_cv: ""
+  fj_cv2: ""
+  fj_cv_other: ""
+  fj_expired: ""
+  fj_oa: ""
+  fj_ob: ""
+  fj_oc: ""
+  fj_other: ""
+  fj_r1_email: ""
+  fj_r1_id: ""
+  fj_r1_token: ""
+  fj_r2_email: ""
+  fj_r2_id: ""
+  fj_r2_token: ""
+  fj_run: ""
+  fj_today: ""
+  fj_tomorrow: ""
+scripts:
+  - type: http:beforeRequest
+    code: |-
+      const configuration = ["fj_user_url", "fj_offre_url", "fj_candidature_url", "fj_gateway_url", "fj_notification_email", "fj_run_ai", "fj_password"];
+      configuration.forEach(k => pm.variables.set(k, pm.collectionVariables.get(k)));
+      ["fj_ai_date", "fj_ai_last_start", "fj_app_a", "fj_app_b", "fj_app_c", "fj_app_c2", "fj_c1_email", "fj_c1_id", "fj_c1_token", "fj_c2_email", "fj_c2_id", "fj_c2_token", "fj_closed", "fj_cv", "fj_cv2", "fj_cv_other", "fj_expired", "fj_oa", "fj_ob", "fj_oc", "fj_other", "fj_r1_email", "fj_r1_id", "fj_r1_token", "fj_r2_email", "fj_r2_id", "fj_r2_token", "fj_run", "fj_today", "fj_tomorrow"].forEach(k => { const val=pm.collectionVariables.get(k); if (val !== undefined) pm.variables.set(k,val); });
+      const isInit = pm.info.requestName === 'Initialiser le parcours + santé candidature';
+      if (!isInit && !pm.collectionVariables.get('fj_run')) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error('Exécutez la collection depuis son premier appel.'); }
+      const source = pm.request.url.toString() + ' ' + (pm.request.body && pm.request.body.raw || '');
+      const missing = [...source.matchAll(/{{(fj_[a-zA-Z0-9_]+)}}/g)].map(x=>x[1]).filter(k => !pm.variables.get(k));
+      if (!isInit && missing.length) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error('Variables manquantes : '+[...new Set(missing)].join(', ')+' — relancez le parcours complet.'); }
+    language: text/javascript

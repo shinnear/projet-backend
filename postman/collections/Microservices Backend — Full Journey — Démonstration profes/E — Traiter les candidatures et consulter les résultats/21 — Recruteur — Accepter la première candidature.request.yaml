@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  Étape 21/34.
+
+  Montrer la décision positive et ouvrir l’email d’acceptation.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/candidatures/{{fj_app_a}}/statut"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "statut": "acceptée"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_r1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.candidature.statut", () => { pm.expect(j.candidature.statut).to.eql("acceptée"); });
+      pm.test("j.candidature.historiqueStatuts.length", () => { pm.expect(j.candidature.historiqueStatuts.length).to.eql(3); });
+      pm.test("Notification accept\u00e9e par le serveur mail", () => { pm.expect(j.notification.emailEnvoye).to.eql(true); });
+
+      }
+    language: text/javascript
+order: 3000

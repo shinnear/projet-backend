@@ -1,0 +1,27 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/cvs/user/{{fj_c1_id}}?page=2&limit=1&tri=ancien"
+method: GET
+queryParams:
+  page: "2"
+  limit: "1"
+  tri: ancien
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.total", () => { pm.expect(j.total).to.eql(2); });
+      pm.test("j.page", () => { pm.expect(j.page).to.eql(2); });
+      pm.test("j.pages", () => { pm.expect(j.pages).to.eql(2); });
+      pm.test("Taille de la page", () => { pm.expect(j.cvs).to.be.an("array"); pm.expect(j.cvs.length).to.be.at.most(1); });
+      pm.test("Autre CV sur la seconde page", () => { pm.expect(j.cvs[0]._id).to.eql(pm.variables.get("fj_cv2")); });
+
+      }
+    language: text/javascript
+order: 2000

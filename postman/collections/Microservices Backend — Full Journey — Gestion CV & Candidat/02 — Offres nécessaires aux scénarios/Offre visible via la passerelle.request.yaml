@@ -1,0 +1,19 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_gateway_url}}/api/offres/{{fj_oa}}"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.statut", () => { pm.expect(j.statut).to.eql("active"); });
+
+      }
+    language: text/javascript
+order: 7000

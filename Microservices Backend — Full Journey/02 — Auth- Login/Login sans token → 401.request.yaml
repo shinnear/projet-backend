@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{baseUrl}}/api/users/{{candidatId}}"
-method: GET
-scripts:
-  - type: afterResponse
-    code: pm.test('No token = 401', () => pm.response.to.have.status(401));
-order: 4000

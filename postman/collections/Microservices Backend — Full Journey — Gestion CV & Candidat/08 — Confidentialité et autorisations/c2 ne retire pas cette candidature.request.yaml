@@ -1,0 +1,13 @@
+$kind: http-request
+description: "HTTP attendu : 403. "
+url: "{{fj_candidature_url}}/candidatures/{{fj_app_a}}"
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c2_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 403", () => { pm.response.to.have.status(403); });
+    language: text/javascript
+order: 3000

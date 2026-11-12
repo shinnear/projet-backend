@@ -1,0 +1,77 @@
+$kind: collection
+name: Microservices Backend — Full Journey — Démonstration professeur (34 étapes)
+description: |
+  Démonstration manuelle de la gestion CV et candidatures, en 34 étapes cohérentes.
+
+  AVANT LA DÉMONSTRATION
+  - Démarrer les services Docker et OpenClaw. Utiliser les derniers fichiers CV/candidatures déjà validés par le parcours de tests.
+  - Collection > Variables : renseigner fj_notification_email avec votre adresse réelle de réception. Conserver No Environment.
+  - Request timeout Postman : 180000 ms ou 0. Si un timeout de script est proposé, prévoir au moins 65000 ms pour l’attente IA.
+  - Ouvrir les requêtes 01 à 34 dans l’ordre et cliquer Send UNE FOIS pour chacune. Les tokens et identifiants sont enregistrés dans les variables de collection et réutilisés même en mode manuel. Aucun Runner requis.
+  - L’étape 01 initialise une nouvelle démonstration et réinitialise les identifiants. Ne pas la rejouer au milieu du parcours.
+
+  PRÉSENTATION
+  Chaque requête porte un numéro, le rôle qui agit, une action claire et une description expliquant ce qu’il faut montrer. Le PDF est produit automatiquement à la création et à la modification du CV ; les emails sont envoyés automatiquement après les candidatures et changements de statut.
+  Deux appels réels IA : le second respecte automatiquement 61 secondes depuis le début du premier. Il peut donc attendre avant envoi. Ne pas réclamer une amélioration garantie de la note : montrer surtout que le contenu modifié a été réanalysé.
+  Jusqu’à 6 emails : trois confirmations de candidature et trois notifications de statut. Les emails sont dirigés vers fj_notification_email, distinct des emails fictifs uniques des comptes de démonstration.
+  L’étape 31 doit retourner 409 : c’est le succès de la règle métier, pas une panne. Les autres étapes attendent 200 ou 201.
+
+  DONNÉES
+  À la fin : deux comptes, trois offres, un CV principal et deux candidatures décidées restent consultables. La troisième candidature et le CV secondaire sont supprimés. Aucune donnée préexistante n’est supprimée. Recommencer depuis 01 crée un nouveau scénario indépendant.
+  Portée : votre gestion CV/candidatures ; les comptes et offres servent de prérequis. Pas de tests exhaustifs des autres modules.
+  La structure JSON, les dépendances et la syntaxe des scripts ont été contrôlées ; cette version simplifiée n’a pas été exécutée sur votre localhost.
+variables:
+  fj_user_url: http://localhost:3001
+  fj_offre_url: http://localhost:3002
+  fj_candidature_url: http://localhost:3005
+  fj_notification_email: ""
+  fj_password: JourneyTest2026!
+  fj_ai_date: ""
+  fj_ai_last_start: ""
+  fj_app_a: ""
+  fj_app_b: ""
+  fj_app_c: ""
+  fj_c1_email: ""
+  fj_c1_id: ""
+  fj_c1_token: ""
+  fj_cv: ""
+  fj_cv2: ""
+  fj_oa: ""
+  fj_ob: ""
+  fj_oc: ""
+  fj_r1_email: ""
+  fj_r1_id: ""
+  fj_r1_token: ""
+  fj_run: ""
+  fj_today: ""
+  fj_tomorrow: ""
+scripts:
+  - type: http:beforeRequest
+    code: |-
+      const first = pm.info.requestName === '01 — Candidat — Créer son compte';
+      if (first) {
+      const email = String(pm.collectionVariables.get('fj_notification_email') || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        pm.execution.setNextRequest(null);
+        throw new Error('Avant Run : collection > Variables > fj_notification_email = votre adresse email de réception.');
+      }
+      const run = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
+      const set = (k,val) => { pm.collectionVariables.set(k,val); pm.variables.set(k,val); };
+      ["fj_ai_date", "fj_ai_last_start", "fj_app_a", "fj_app_b", "fj_app_c", "fj_app_c2", "fj_c1_email", "fj_c1_id", "fj_c1_token", "fj_c2_email", "fj_c2_id", "fj_c2_token", "fj_closed", "fj_cv", "fj_cv2", "fj_cv_other", "fj_expired", "fj_oa", "fj_ob", "fj_oc", "fj_other", "fj_r1_email", "fj_r1_id", "fj_r1_token", "fj_r2_email", "fj_r2_id", "fj_r2_token", "fj_run", "fj_today", "fj_tomorrow"].forEach(k => { pm.collectionVariables.unset(k); pm.variables.unset(k); });
+      set('fj_run',run);
+      set('fj_today',new Date().toISOString().slice(0,10));
+      set('fj_tomorrow',new Date(Date.now()+86400000).toISOString().slice(0,10));
+      ['c1','r1'].forEach(k=>set('fj_'+k+'_email', 'journey.'+k+'.'+run+'@example.com'));
+      set('fj_notification_email',email);
+      console.log('Parcours démarré :',run);
+      }
+      for (const [k,val] of Object.entries(pm.collectionVariables.toObject())) {
+       if (k.startsWith('fj_')) pm.variables.set(k,val);
+      }
+      if (!pm.collectionVariables.get('fj_run')) {
+       throw new Error('Commencez par 01 — Candidat — Créer son compte.');
+      }
+      const source = pm.request.url.toString() + ' ' + (pm.request.body && pm.request.body.raw || '');
+      const missing = [...source.matchAll(/{{(fj_[a-zA-Z0-9_]+)}}/g)].map(x=>x[1]).filter(k=>!pm.collectionVariables.get(k));
+      if (missing.length) throw new Error('Étape précédente manquante : '+[...new Set(missing)].join(', '));
+    language: text/javascript

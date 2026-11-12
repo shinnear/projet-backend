@@ -1,0 +1,33 @@
+$kind: http-request
+name: "18 — Candidat — Voir ses candidatures : page 2"
+description: |-
+  Étape 18/34.
+
+  Afficher la seconde candidature pour expliquer la pagination.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/candidatures/candidat/{{fj_c1_id}}?page=2&limit=1&tri=ancien"
+method: GET
+queryParams:
+  page: "2"
+  limit: "1"
+  tri: ancien
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.total", () => { pm.expect(j.total).to.eql(2); });
+      pm.test("j.page", () => { pm.expect(j.page).to.eql(2); });
+      pm.test("j.pages", () => { pm.expect(j.pages).to.eql(2); });
+      pm.test("Taille de la page", () => { pm.expect(j.candidatures).to.be.an("array"); pm.expect(j.candidatures.length).to.be.at.most(1); });
+      pm.test("Deuxi\u00e8me \u00e9l\u00e9ment", () => { pm.expect(j.candidatures[0]._id).to.eql(pm.variables.get("fj_app_b")); });
+
+      }
+    language: text/javascript
+order: 4000

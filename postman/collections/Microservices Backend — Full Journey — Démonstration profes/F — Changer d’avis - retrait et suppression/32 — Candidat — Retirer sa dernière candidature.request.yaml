@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Étape 32/34.
+
+  Le candidat change d’avis. Le retrait est autorisé tant que la candidature est envoyée.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/candidatures/{{fj_app_c}}"
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code !== 200) { console.error("Prérequis échoué : arrêt du parcours."); pm.execution.setNextRequest(null); }
+    language: text/javascript
+order: 6000

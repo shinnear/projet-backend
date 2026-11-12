@@ -1,0 +1,18 @@
+$kind: http-request
+description: "HTTP attendu : 200. Échec bloquant pour les étapes dépendantes."
+url: "{{fj_offre_url}}/health"
+method: GET
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.status", () => { pm.expect(j.status).to.eql("ok"); });
+
+      }
+      if (pm.response.code !== 200) { console.error("Prérequis échoué : arrêt du parcours."); pm.execution.setNextRequest(null); }
+    language: text/javascript
+order: 3000

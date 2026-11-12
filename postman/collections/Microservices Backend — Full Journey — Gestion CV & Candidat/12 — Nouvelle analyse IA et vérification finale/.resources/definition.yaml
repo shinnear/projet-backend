@@ -1,0 +1,3 @@
+$kind: collection
+description: Le script attend automatiquement le temps restant jusqu’à 61 secondes depuis le premier appel IA, sans modifier le backend.
+order: 13000

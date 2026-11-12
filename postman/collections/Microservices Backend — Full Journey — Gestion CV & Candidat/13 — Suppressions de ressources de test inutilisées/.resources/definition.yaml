@@ -1,0 +1,3 @@
+$kind: collection
+description: Ne supprime que les ressources créées pendant ce parcours. Les deux candidatures décidées, leur CV, leurs offres et les comptes restent disponibles pour la démonstration. Le backend ne permet pas de retirer une candidature décidée.
+order: 14000

@@ -1,0 +1,29 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/candidatures/{{fj_app_b}}/statut"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "statut": "rejetée"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_r1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.candidature.statut", () => { pm.expect(j.candidature.statut).to.eql("rejetée"); });
+      pm.test("j.candidature.historiqueStatuts.length", () => { pm.expect(j.candidature.historiqueStatuts.length).to.eql(2); });
+      pm.test("Notification accept\u00e9e par le serveur mail", () => { pm.expect(j.notification.emailEnvoye).to.eql(true); });
+
+      }
+    language: text/javascript
+order: 6000

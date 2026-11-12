@@ -1,0 +1,21 @@
+$kind: http-request
+name: "Passerelle : profil connecté"
+description: "HTTP attendu : 200. "
+url: "{{fj_gateway_url}}/api/users/{{fj_c1_id}}"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.role", () => { pm.expect(j.role).to.eql("candidat"); });
+      pm.test("Mot de passe masqu\u00e9", () => { pm.expect(j).not.to.have.property("password"); });
+
+      }
+    language: text/javascript
+order: 11000

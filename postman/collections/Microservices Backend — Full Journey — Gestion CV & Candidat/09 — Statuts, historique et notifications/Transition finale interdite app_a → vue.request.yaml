@@ -1,0 +1,21 @@
+$kind: http-request
+description: "HTTP attendu : 409. "
+url: "{{fj_candidature_url}}/candidatures/{{fj_app_a}}/statut"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "statut": "vue"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_r1_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 409", () => { pm.response.to.have.status(409); });
+    language: text/javascript
+order: 8000

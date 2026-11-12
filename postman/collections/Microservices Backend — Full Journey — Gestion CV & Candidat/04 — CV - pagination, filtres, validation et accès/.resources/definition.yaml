@@ -1,0 +1,4 @@
+$kind: collection
+name: "04 — CV : pagination, filtres, validation et accès"
+description: Ces tests nécessitent listeCVController et les routes fournis dans notre dernier lot de fichiers.
+order: 5000

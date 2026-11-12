@@ -1,0 +1,15 @@
+$kind: http-request
+description: "HTTP attendu : 400. "
+url: "{{fj_candidature_url}}/candidatures/candidat/{{fj_c1_id}}?offreId=abc"
+method: GET
+queryParams:
+  offreId: abc
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 400", () => { pm.response.to.have.status(400); });
+    language: text/javascript
+order: 16000

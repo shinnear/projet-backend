@@ -1,0 +1,3 @@
+$kind: collection
+description: "fj_run_ai=true par défaut. OpenClaw doit être démarré. Timeout Postman conseillé : 180000 ms. Un deuxième appel réel sera exécuté plus tard en respectant le délai minimal de 60 secondes."
+order: 6000

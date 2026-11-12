@@ -1,178 +1,117 @@
-const axios = require('axios');
 const Candidature = require('../models/Candidature');
 const CV = require('../models/CV');
+
 const {
   envoyerConfirmationCandidature
 } = require('../services/emailService');
 
-// Adresses des autres services.
-const USER_SERVICE_URL = () =>
-  process.env.USER_SERVICE_URL || 'http://localhost:3001';
+const {
+  notifierStatut
+} = require('../services/notificationStatutService');
 
-const OFFRE_SERVICE_URL = () =>
-  process.env.OFFRE_SERVICE_URL || 'http://localhost:3002';
-
-// Configuration des appels entre services.
-const optionsService = () => ({
-  headers: {
-    'x-service-token': process.env.SERVICE_TOKEN
-  },
-  timeout: 10000
-});
-
-// Gestion commune des erreurs.
-function repondreErreur(res, err) {
-  if (err.code === 11000) {
-    return res.status(409).json({
-      message: 'Vous avez déjà postulé à cette offre'
-    });
-  }
-
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      message: err.message
-    });
-  }
-
-  if (err.name === 'CastError') {
-    return res.status(400).json({
-      message: 'Identifiant ou valeur invalide'
-    });
-  }
-
-  console.error('Erreur candidature :', err.message);
-
-  return res.status(500).json({
-    message: 'Une erreur interne est survenue'
-  });
-}
+const {
+  TRANSITIONS,
+  erreur,
+  repondreErreur,
+  texte,
+  identifiant,
+  periode,
+  filtreStatut,
+  lireService,
+  offreDuRecruteur,
+  offresDuRecruteur,
+  lister,
+  statistiques,
+  sansEmail
+} = require('../services/candidatureUtils');
 
 // POST /candidatures
 const creerCandidature = async (req, res) => {
   try {
     const body = req.body || {};
-    const { offreId, cvId, lettreMotivation } = body;
-    const candidatId = req.user.id;
 
-    const email = typeof body.email === 'string'
-      ? body.email.trim()
-      : '';
+    const offreId = identifiant(body.offreId);
+    const cvId = identifiant(body.cvId);
+    const email = texte(body.email, 'Email', 254);
 
-    if (
-      typeof offreId !== 'string' ||
-      offreId.trim() === '' ||
-      typeof cvId !== 'string' ||
-      cvId.trim() === ''
-    ) {
-      return res.status(400).json({
-        message: 'L’offre et le CV sont obligatoires'
-      });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw erreur(400, 'Adresse email invalide');
     }
 
     if (
-      email.length > 254 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      body.lettreMotivation !== undefined &&
+      (
+        typeof body.lettreMotivation !== 'string' ||
+        body.lettreMotivation.length > 3000
+      )
     ) {
-      return res.status(400).json({
-        message: 'Une adresse email valide est obligatoire'
-      });
-    }
-
-    // Vérifier que le candidat existe.
-    try {
-      await axios.get(
-        `${USER_SERVICE_URL()}/internal/users/${candidatId}`,
-        optionsService()
+      throw erreur(
+        400,
+        'La lettre doit être un texte de 3000 caractères maximum'
       );
-    } catch (err) {
-      if (err.response?.status === 404) {
-        return res.status(404).json({
-          message: 'Candidat introuvable dans user-service'
-        });
-      }
-
-      return res.status(502).json({
-        message: 'Impossible de vérifier le candidat auprès de user-service'
-      });
     }
 
-    // Récupérer l'offre.
-    let offre;
-
-    try {
-      const reponse = await axios.get(
-        `${OFFRE_SERVICE_URL()}/internal/offres/${offreId}`,
-        optionsService()
-      );
-
-      offre = reponse.data;
-    } catch (err) {
-      if (err.response?.status === 404) {
-        return res.status(404).json({
-          message: 'Offre introuvable dans offre-service'
-        });
-      }
-
-      return res.status(502).json({
-        message: 'Impossible de vérifier l’offre auprès de offre-service'
-      });
-    }
-
-    if (offre.statut !== 'active') {
-      return res.status(400).json({
-        message: 'Impossible de postuler : l’offre n’est pas active'
-      });
-    }
-
-    if (
-      offre.dateLimite &&
-      new Date(offre.dateLimite) < new Date()
-    ) {
-      return res.status(400).json({
-        message: 'La date limite de candidature est dépassée'
-      });
-    }
-
-    // Vérifier que le CV appartient au candidat.
     const cv = await CV.findById(cvId);
 
     if (!cv) {
-      return res.status(404).json({
-        message: 'CV non trouvé'
-      });
+      throw erreur(404, 'CV non trouvé');
     }
 
-    if (cv.candidatId !== candidatId) {
-      return res.status(403).json({
-        message: 'Ce CV ne vous appartient pas'
-      });
+    if (cv.candidatId !== req.user.id) {
+      throw erreur(403, 'Ce CV ne vous appartient pas');
     }
 
-    // L'index unique du modèle empêche les doublons.
+    await lireService('user', req.user.id);
+
+    const offre = await lireService('offre', offreId);
+
+    if (!offre || offre.statut !== 'active') {
+      throw erreur(400, 'L’offre n’est pas active');
+    }
+
+    if (offre.dateLimite) {
+      const limite = new Date(offre.dateLimite).getTime();
+
+      if (!Number.isFinite(limite)) {
+        throw erreur(502, 'La date limite de l’offre est invalide');
+      }
+
+      if (limite < Date.now()) {
+        throw erreur(400, 'La date limite de candidature est dépassée');
+      }
+    }
+
+    // L’index unique empêche les doublons, même en cas de requêtes simultanées.
     const candidature = await Candidature.create({
-      candidatId,
+      candidatId: req.user.id,
       offreId,
       cvId,
-      lettreMotivation
+      lettreMotivation: body.lettreMotivation,
+      emailNotification: email,
+      historiqueStatuts: [
+        {
+          statut: 'envoyée',
+          date: new Date(),
+          auteurId: req.user.id
+        }
+      ]
     });
 
-    // Envoyer l'email seulement après l'enregistrement.
     let emailEnvoye = false;
 
     try {
       await envoyerConfirmationCandidature(email, offre.titre);
       emailEnvoye = true;
     } catch {
-      // La candidature reste enregistrée même si l'email échoue.
       console.error(
-        'Échec de la notification email pour la candidature',
-        candidature._id.toString()
+        'Échec email de confirmation',
+        String(candidature._id)
       );
     }
 
     return res.status(201).json({
       message: 'Candidature soumise avec succès',
-      candidature,
+      candidature: sansEmail(candidature),
       notification: {
         emailEnvoye,
         message: emailEnvoye
@@ -188,132 +127,50 @@ const creerCandidature = async (req, res) => {
 // GET /candidatures/candidat/:candidatId
 const getCandidaturesByCandidat = async (req, res) => {
   try {
-    // Cette liste personnelle est réservée au candidat concerné.
     if (req.params.candidatId !== req.user.id) {
-      return res.status(403).json({
-        message: 'Vous ne pouvez consulter que vos propres candidatures'
-      });
+      throw erreur(
+        403,
+        'Vous ne pouvez consulter que vos propres candidatures'
+      );
     }
 
-    const candidatures = await Candidature.find({
-      candidatId: req.user.id
-    })
-      .populate('cvId', 'titre competences')
-      .sort({ createdAt: -1 });
+    const filtre = {
+      candidatId: req.user.id,
+      ...periode(req.query),
+      ...filtreStatut(req.query)
+    };
 
-    return res.json({
-      total: candidatures.length,
-      candidatures
-    });
+    if (req.query.offreId !== undefined) {
+      filtre.offreId = identifiant(req.query.offreId);
+    }
+
+    return res.json(await lister(filtre, req.query));
   } catch (err) {
     return repondreErreur(res, err);
   }
 };
 
-// Vérifier que l'offre appartient au recruteur connecté.
-// Retourne false après avoir envoyé une réponse de refus.
-async function verifierRecruteurOffre(offreId, req, res) {
-  if (req.user.role !== 'recruteur') {
-    res.status(403).json({
-      message: 'Accès réservé au recruteur de l’offre'
-    });
-    return false;
-  }
-
-  try {
-    const reponse = await axios.get(
-      `${OFFRE_SERVICE_URL()}/internal/offres/${offreId}`,
-      optionsService()
-    );
-
-    if (reponse.data.recruteurId !== req.user.id) {
-      res.status(403).json({
-        message: 'Cette offre ne vous appartient pas'
-      });
-      return false;
-    }
-
-    return true;
-  } catch (err) {
-    if (err.response?.status === 404) {
-      res.status(404).json({
-        message: 'Offre introuvable'
-      });
-    } else {
-      res.status(502).json({
-        message: 'Impossible de vérifier le propriétaire de l’offre'
-      });
-    }
-
-    return false;
-  }
-}
-
 // GET /candidatures/offre/:offreId
 const getCandidaturesByOffre = async (req, res) => {
   try {
-    const autorise = await verifierRecruteurOffre(
-      req.params.offreId,
-      req,
-      res
-    );
+    const offreId = identifiant(req.params.offreId);
 
-    if (!autorise) return;
-
-    const page = Number(req.query.page ?? 1);
-    const limit = Number(req.query.limit ?? 20);
-    const { statut } = req.query;
-
-    if (
-      !Number.isInteger(page) ||
-      page < 1 ||
-      !Number.isInteger(limit) ||
-      limit < 1 ||
-      limit > 100
-    ) {
-      return res.status(400).json({
-        message: 'page doit être un entier positif et limit un entier entre 1 et 100'
-      });
-    }
-
-    const statutsAutorises = [
-      'envoyée',
-      'vue',
-      'acceptée',
-      'rejetée'
-    ];
-
-    if (
-      statut !== undefined &&
-      !statutsAutorises.includes(statut)
-    ) {
-      return res.status(400).json({
-        message: 'Statut de recherche invalide'
-      });
-    }
+    await offreDuRecruteur(req, offreId);
 
     const filtre = {
-      offreId: req.params.offreId
+      offreId,
+      ...periode(req.query),
+      ...filtreStatut(req.query)
     };
 
-    if (statut) {
-      filtre.statut = statut;
+    if (req.query.candidatId !== undefined) {
+      filtre.candidatId = texte(
+        req.query.candidatId,
+        'candidatId'
+      );
     }
 
-    const total = await Candidature.countDocuments(filtre);
-
-    const candidatures = await Candidature.find(filtre)
-      .populate('cvId', 'titre competences langues experiences')
-      .sort({ createdAt: -1, _id: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
-
-    return res.json({
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-      candidatures
-    });
+    return res.json(await lister(filtre, req.query));
   } catch (err) {
     return repondreErreur(res, err);
   }
@@ -322,28 +179,25 @@ const getCandidaturesByOffre = async (req, res) => {
 // GET /candidatures/:id
 const getCandidatureById = async (req, res) => {
   try {
-    const candidature = await Candidature.findById(req.params.id);
+    const candidature = await Candidature.findById(
+      identifiant(req.params.id)
+    );
 
     if (!candidature) {
-      return res.status(404).json({
-        message: 'Candidature non trouvée'
-      });
+      throw erreur(404, 'Candidature non trouvée');
     }
 
-    // Le candidat propriétaire ou le recruteur de l'offre peut consulter.
     if (candidature.candidatId !== req.user.id) {
-      const autorise = await verifierRecruteurOffre(
-        candidature.offreId,
-        req,
-        res
-      );
-
-      if (!autorise) return;
+      await offreDuRecruteur(req, candidature.offreId);
     }
 
-    await candidature.populate('cvId');
+    // L’analyse IA personnelle du CV n’est pas transmise ici.
+    await candidature.populate(
+      'cvId',
+      'titre competences langues experiences formations lienLinkedin'
+    );
 
-    return res.json(candidature);
+    return res.json(sansEmail(candidature));
   } catch (err) {
     return repondreErreur(res, err);
   }
@@ -352,37 +206,88 @@ const getCandidatureById = async (req, res) => {
 // PUT /candidatures/:id/statut
 const updateStatut = async (req, res) => {
   try {
-    const { statut } = req.body || {};
-    const statutsAutorises = ['vue', 'acceptée', 'rejetée'];
+    const statut = req.body?.statut;
 
-    if (!statutsAutorises.includes(statut)) {
-      return res.status(400).json({
-        message: 'Statut invalide : utilisez vue, acceptée ou rejetée'
-      });
+    if (!['vue', 'acceptée', 'rejetée'].includes(statut)) {
+      throw erreur(
+        400,
+        'Statut invalide : vue, acceptée ou rejetée'
+      );
     }
 
-    const candidature = await Candidature.findById(req.params.id);
+    const candidature = await Candidature.findById(
+      identifiant(req.params.id)
+    ).select('+emailNotification');
 
     if (!candidature) {
-      return res.status(404).json({
-        message: 'Candidature non trouvée'
+      throw erreur(404, 'Candidature non trouvée');
+    }
+
+    const offre = await offreDuRecruteur(
+      req,
+      candidature.offreId
+    );
+
+    // Une répétition ne crée pas un nouvel historique ni un nouvel email.
+    if (candidature.statut === statut) {
+      return res.json({
+        message: 'Statut déjà appliqué',
+        candidature: sansEmail(candidature)
       });
     }
 
-    const autorise = await verifierRecruteurOffre(
-      candidature.offreId,
-      req,
-      res
+    if (!TRANSITIONS[candidature.statut]?.includes(statut)) {
+      throw erreur(
+        409,
+        `Transition interdite : ${candidature.statut} vers ${statut}`
+      );
+    }
+
+    const date = new Date();
+
+    // Le filtre vérifie que le statut n’a pas changé entre-temps.
+    const resultat = await Candidature.findOneAndUpdate(
+      {
+        _id: candidature._id,
+        statut: candidature.statut
+      },
+      {
+        $set: {
+          statut,
+          dateMiseAJour: date
+        },
+        $push: {
+          historiqueStatuts: {
+            statut,
+            date,
+            auteurId: req.user.id
+          }
+        }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
     );
 
-    if (!autorise) return;
+    if (!resultat) {
+      throw erreur(
+        409,
+        'La candidature a changé. Rechargez-la avant de réessayer.'
+      );
+    }
 
-    candidature.statut = statut;
-    await candidature.save();
+    // Envoyer seulement après l’enregistrement du changement.
+    const notification = await notifierStatut(
+      candidature.emailNotification,
+      offre.titre,
+      statut
+    );
 
     return res.json({
       message: 'Statut mis à jour',
-      candidature
+      candidature: sansEmail(resultat),
+      notification
     });
   } catch (err) {
     return repondreErreur(res, err);
@@ -392,31 +297,100 @@ const updateStatut = async (req, res) => {
 // DELETE /candidatures/:id
 const retirerCandidature = async (req, res) => {
   try {
-    const candidature = await Candidature.findById(req.params.id);
+    const candidature = await Candidature.findById(
+      identifiant(req.params.id)
+    );
 
     if (!candidature) {
-      return res.status(404).json({
-        message: 'Candidature non trouvée'
-      });
+      throw erreur(404, 'Candidature non trouvée');
     }
 
     if (candidature.candidatId !== req.user.id) {
-      return res.status(403).json({
-        message: 'Vous ne pouvez retirer que vos propres candidatures'
-      });
+      throw erreur(
+        403,
+        'Vous ne pouvez retirer que vos propres candidatures'
+      );
     }
 
     if (candidature.statut !== 'envoyée') {
-      return res.status(400).json({
-        message: 'Seule une candidature au statut envoyée peut être retirée'
-      });
+      throw erreur(
+        400,
+        'Seule une candidature envoyée peut être retirée'
+      );
     }
 
-    await candidature.deleteOne();
+    const resultat = await Candidature.deleteOne({
+      _id: candidature._id,
+      candidatId: req.user.id,
+      statut: 'envoyée'
+    });
+
+    if (resultat.deletedCount !== 1) {
+      throw erreur(
+        409,
+        'La candidature a changé. Rechargez-la.'
+      );
+    }
 
     return res.json({
       message: 'Candidature retirée avec succès'
     });
+  } catch (err) {
+    return repondreErreur(res, err);
+  }
+};
+
+// GET /candidatures/statistiques/candidat
+const statistiquesCandidat = async (req, res) => {
+  try {
+    const filtre = {
+      candidatId: req.user.id,
+      ...periode(req.query)
+    };
+
+    if (req.query.offreId !== undefined) {
+      filtre.offreId = identifiant(req.query.offreId);
+    }
+
+    return res.json(await statistiques(filtre));
+  } catch (err) {
+    return repondreErreur(res, err);
+  }
+};
+
+// GET /candidatures/offre/:offreId/statistiques
+const statistiquesOffre = async (req, res) => {
+  try {
+    const offreId = identifiant(req.params.offreId);
+
+    await offreDuRecruteur(req, offreId);
+
+    const resultat = await statistiques({
+      offreId,
+      ...periode(req.query)
+    });
+
+    return res.json({
+      offreId,
+      ...resultat
+    });
+  } catch (err) {
+    return repondreErreur(res, err);
+  }
+};
+
+// GET /candidatures/statistiques/recruteur
+const statistiquesRecruteur = async (req, res) => {
+  try {
+    const dates = periode(req.query);
+    const ids = await offresDuRecruteur(req);
+
+    return res.json(
+      await statistiques({
+        offreId: { $in: ids },
+        ...dates
+      })
+    );
   } catch (err) {
     return repondreErreur(res, err);
   }
@@ -428,5 +402,8 @@ module.exports = {
   getCandidaturesByOffre,
   getCandidatureById,
   updateStatut,
-  retirerCandidature
+  retirerCandidature,
+  statistiquesCandidat,
+  statistiquesOffre,
+  statistiquesRecruteur
 };

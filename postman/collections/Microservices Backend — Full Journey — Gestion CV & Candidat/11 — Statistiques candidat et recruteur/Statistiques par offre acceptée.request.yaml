@@ -1,0 +1,21 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/candidatures/offre/{{fj_oa}}/statistiques"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_r1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.total", () => { pm.expect(j.total).to.eql(1); });
+      pm.test("j.parStatut", () => { pm.expect(j.parStatut).to.eql({"envoyée": 0, "vue": 0, "acceptée": 1, "rejetée": 0}); });
+      pm.test("j.tauxAcceptation", () => { pm.expect(j.tauxAcceptation).to.eql(100.0); });
+
+      }
+    language: text/javascript
+order: 3000

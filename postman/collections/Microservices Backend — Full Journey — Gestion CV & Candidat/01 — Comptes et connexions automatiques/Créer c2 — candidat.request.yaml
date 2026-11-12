@@ -1,0 +1,36 @@
+$kind: http-request
+description: "HTTP attendu : 201. Échec bloquant pour les étapes dépendantes."
+url: "{{fj_user_url}}/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nom": "Journey {{fj_run}}",
+      "prenom": "c2",
+      "email": "{{fj_c2_email}}",
+      "password": "{{fj_password}}",
+      "role": "candidat",
+      "competences": [
+        "Node.js",
+        "MongoDB"
+      ]
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 201", () => { pm.response.to.have.status(201); });
+      if (pm.response.code === 201) {
+       const j = pm.response.json();
+      pm.test("Identifiant r\u00e9cup\u00e9r\u00e9 : c2_id", () => { const id = j.user.id; pm.expect(id).to.be.a("string").and.match(/^[a-f0-9]{24}$/i); pm.collectionVariables.set("fj_c2_id", id); pm.variables.set("fj_c2_id", id); });
+      pm.test("Token re\u00e7u", () => { pm.expect(j.token).to.be.a("string").and.not.empty; pm.collectionVariables.set("fj_c2_token",j.token); pm.variables.set("fj_c2_token",j.token); });
+      pm.test("j.user.role", () => { pm.expect(j.user.role).to.eql("candidat"); });
+
+      }
+      if (pm.response.code !== 201) { console.error("Prérequis échoué : arrêt du parcours."); pm.execution.setNextRequest(null); }
+    language: text/javascript
+order: 3000

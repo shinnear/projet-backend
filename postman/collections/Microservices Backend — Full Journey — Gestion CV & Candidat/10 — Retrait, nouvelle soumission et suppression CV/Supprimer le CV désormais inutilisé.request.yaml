@@ -1,0 +1,15 @@
+$kind: http-request
+description: "HTTP attendu : 200. Échec bloquant pour les étapes dépendantes."
+url: "{{fj_candidature_url}}/cvs/{{fj_cv2}}"
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code !== 200) { console.error("Prérequis échoué : arrêt du parcours."); pm.execution.setNextRequest(null); }
+    language: text/javascript
+order: 5000

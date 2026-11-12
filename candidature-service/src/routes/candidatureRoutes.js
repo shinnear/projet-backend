@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+
 const {
   creerCandidature,
   getCandidaturesByCandidat,
@@ -7,25 +8,82 @@ const {
   getCandidatureById,
   updateStatut,
   retirerCandidature,
+  statistiquesCandidat,
+  statistiquesOffre,
+  statistiquesRecruteur
 } = require('../controllers/candidatureController');
-const { authMiddleware, authorize } = require('../middleware/auth');
 
-// Submit a candidature — candidats only
-router.post('/candidatures', authMiddleware, authorize('candidat'), creerCandidature);
+const {
+  authMiddleware,
+  authorize
+} = require('../middleware/auth');
 
-// View candidatures by candidate (own or recruteur view)
-router.get('/candidatures/candidat/:candidatId', authMiddleware, getCandidaturesByCandidat);
+// Statistiques
+router.get(
+  '/candidatures/statistiques/candidat',
+  authMiddleware,
+  authorize('candidat'),
+  statistiquesCandidat
+);
 
-// View candidatures for an offer — recruteurs only
-router.get('/candidatures/offre/:offreId', authMiddleware, authorize('recruteur'), getCandidaturesByOffre);
+router.get(
+  '/candidatures/statistiques/recruteur',
+  authMiddleware,
+  authorize('recruteur'),
+  statistiquesRecruteur
+);
 
-// View a single candidature
-router.get('/candidatures/:id', authMiddleware, getCandidatureById);
+router.get(
+  '/candidatures/offre/:offreId/statistiques',
+  authMiddleware,
+  authorize('recruteur'),
+  statistiquesOffre
+);
 
-// Update statut — recruteurs only
-router.put('/candidatures/:id/statut', authMiddleware, authorize('recruteur'), updateStatut);
+// Création
+router.post(
+  '/candidatures',
+  authMiddleware,
+  authorize('candidat'),
+  creerCandidature
+);
 
-// Withdraw candidature — candidat only (enforced in controller)
-router.delete('/candidatures/:id', authMiddleware, authorize('candidat'), retirerCandidature);
+// Listes
+router.get(
+  '/candidatures/candidat/:candidatId',
+  authMiddleware,
+  authorize('candidat'),
+  getCandidaturesByCandidat
+);
+
+router.get(
+  '/candidatures/offre/:offreId',
+  authMiddleware,
+  authorize('recruteur'),
+  getCandidaturesByOffre
+);
+
+// Consultation
+router.get(
+  '/candidatures/:id',
+  authMiddleware,
+  getCandidatureById
+);
+
+// Changement de statut
+router.put(
+  '/candidatures/:id/statut',
+  authMiddleware,
+  authorize('recruteur'),
+  updateStatut
+);
+
+// Retrait
+router.delete(
+  '/candidatures/:id',
+  authMiddleware,
+  authorize('candidat'),
+  retirerCandidature
+);
 
 module.exports = router;

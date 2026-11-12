@@ -1,9 +1,0 @@
-$kind: http-request
-url: "{{baseUrl}}/api/microprojets"
-method: GET
-headers:
-  Authorization: Bearer {{tokenCandidat}}
-scripts:
-  - type: afterResponse
-    code: pm.test('Get microprojets 200', () => pm.response.to.have.status(200));
-order: 2000

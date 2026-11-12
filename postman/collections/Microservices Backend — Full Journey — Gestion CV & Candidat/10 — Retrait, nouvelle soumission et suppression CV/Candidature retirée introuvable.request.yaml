@@ -1,0 +1,13 @@
+$kind: http-request
+description: "HTTP attendu : 404. "
+url: "{{fj_candidature_url}}/candidatures/{{fj_app_c}}"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 404", () => { pm.response.to.have.status(404); });
+    language: text/javascript
+order: 2000

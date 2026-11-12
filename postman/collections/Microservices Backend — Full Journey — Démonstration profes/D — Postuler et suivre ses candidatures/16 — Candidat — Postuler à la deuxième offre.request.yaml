@@ -1,0 +1,40 @@
+$kind: http-request
+description: |-
+  Étape 16/34.
+
+  Créer la deuxième candidature et sa notification de confirmation.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/candidatures"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "offreId": "{{fj_ob}}",
+      "cvId": "{{fj_cv}}",
+      "lettreMotivation": "Je souhaite rejoindre votre équipe pour développer des API Node.js.",
+      "email": "{{fj_notification_email}}"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 201", () => { pm.response.to.have.status(201); });
+      if (pm.response.code === 201) {
+       const j = pm.response.json();
+      pm.test("j.candidature.statut", () => { pm.expect(j.candidature.statut).to.eql("envoyée"); });
+      pm.test("j.candidature.historiqueStatuts.length", () => { pm.expect(j.candidature.historiqueStatuts.length).to.eql(1); });
+      pm.test("Notification accept\u00e9e par le serveur mail", () => { pm.expect(j.notification.emailEnvoye).to.eql(true); });
+      pm.test("Email priv\u00e9 masqu\u00e9", () => { pm.expect(j.candidature).not.to.have.property("emailNotification"); });
+      pm.test("Identifiant r\u00e9cup\u00e9r\u00e9 : app_b", () => { const id = j.candidature._id; pm.expect(id).to.be.a("string").and.match(/^[a-f0-9]{24}$/i); pm.collectionVariables.set("fj_app_b", id); pm.variables.set("fj_app_b", id); });
+
+      }
+      if (pm.response.code !== 201) { console.error("Prérequis échoué : arrêt du parcours."); pm.execution.setNextRequest(null); }
+    language: text/javascript
+order: 2000

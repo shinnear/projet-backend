@@ -1,0 +1,27 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/cvs/{{fj_cv}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "titre": "CV Journey {{fj_run}} — Backend confirmé"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("CV modifi\u00e9 et analyse invalid\u00e9e", () => { pm.expect(j.cv.titre).to.include("Backend confirmé"); pm.expect(j.cv).not.to.have.property("analyseIA"); pm.expect(j.cv).not.to.have.property("pdf"); });
+
+      }
+    language: text/javascript
+order: 4000

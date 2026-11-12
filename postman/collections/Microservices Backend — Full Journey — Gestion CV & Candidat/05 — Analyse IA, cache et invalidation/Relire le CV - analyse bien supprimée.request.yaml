@@ -1,0 +1,20 @@
+$kind: http-request
+name: "Relire le CV : analyse bien supprimée"
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/cvs/{{fj_cv}}"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("Analyse absente en base", () => { pm.expect(j).not.to.have.property("analyseIA"); pm.expect(j.titre).to.include("Backend confirmé"); });
+
+      }
+    language: text/javascript
+order: 5000

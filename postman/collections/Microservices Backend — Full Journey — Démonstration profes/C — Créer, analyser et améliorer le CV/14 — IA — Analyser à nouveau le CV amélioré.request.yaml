@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  Étape 14/34.
+
+  Montrer une nouvelle analyse. Si nécessaire, le script attend automatiquement la fin du délai minimal entre deux appels IA.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/cvs/{{fj_cv}}/analyse"
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: beforeRequest
+    code: const previous = Number(pm.collectionVariables.get("fj_ai_last_start") || 0); const delay = Math.max(0, 61000 - (Date.now() - previous)); if (delay) { console.log("Respect de la limite IA, attente ms :", delay); setTimeout(() => {}, delay); }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("Structure de l\u2019analyse", () => { pm.expect(j.analyseIA.note).to.be.a("number").within(0,10); pm.expect(j.analyseIA.resume).to.be.a("string").and.not.empty; pm.expect(j.analyseIA.pointsForts).to.be.an("array"); pm.expect(j.analyseIA.ameliorations).to.be.an("array"); pm.expect(Number.isNaN(Date.parse(j.analyseIA.dateAnalyse))).to.eql(false); });
+      pm.test("j.message", () => { pm.expect(j.message).to.eql("CV analysé avec succès"); });
+      pm.test("Nouvelle date d\u2019analyse", () => { pm.expect(j.analyseIA.dateAnalyse).not.to.eql(pm.collectionVariables.get("fj_ai_date")); pm.collectionVariables.set("fj_ai_date",j.analyseIA.dateAnalyse); });
+
+      }
+    language: text/javascript
+order: 8000

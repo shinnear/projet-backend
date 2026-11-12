@@ -1,0 +1,23 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/candidatures/candidat/{{fj_c1_id}}?page=99&limit=1"
+method: GET
+queryParams:
+  page: "99"
+  limit: "1"
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.candidatures", () => { pm.expect(j.candidatures).to.eql([]); });
+      pm.test("j.total", () => { pm.expect(j.total).to.eql(3); });
+
+      }
+    language: text/javascript
+order: 5000

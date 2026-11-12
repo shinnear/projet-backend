@@ -1,0 +1,13 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_offre_url}}/offres/{{fj_other}}"
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_r2_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+    language: text/javascript
+order: 5000

@@ -1,0 +1,23 @@
+$kind: http-request
+description: "HTTP attendu : 403. "
+url: "{{fj_offre_url}}/offres"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "titre": "Interdit",
+      "description": "Test",
+      "typeContrat": "stage"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 403", () => { pm.response.to.have.status(403); });
+    language: text/javascript
+order: 8000

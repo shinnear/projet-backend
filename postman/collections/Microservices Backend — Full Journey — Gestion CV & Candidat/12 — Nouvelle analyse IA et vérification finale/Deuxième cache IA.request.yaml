@@ -1,0 +1,23 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/cvs/{{fj_cv}}/analyse"
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: beforeRequest
+    code: if (String(pm.collectionVariables.get("fj_run_ai")) !== "true") { console.warn("IA désactivée dans les variables"); pm.execution.skipRequest(); }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.message", () => { pm.expect(j.message).to.eql("Analyse déjà disponible"); });
+      pm.test("Analyse r\u00e9utilis\u00e9e", () => { pm.expect(j.analyseIA.dateAnalyse).to.eql(pm.collectionVariables.get("fj_ai_date")); });
+
+      }
+    language: text/javascript
+order: 2000

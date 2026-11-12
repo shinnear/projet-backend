@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  Étape 31/34.
+
+  Résultat attendu : HTTP 409. Expliquer qu’un CV lié à une candidature ne peut pas être supprimé.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/cvs/{{fj_cv2}}"
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 409", () => { pm.response.to.have.status(409); });
+    language: text/javascript
+order: 5000

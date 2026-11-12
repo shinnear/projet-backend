@@ -1,0 +1,24 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/cvs/user/{{fj_c1_id}}?analyse=oui"
+method: GET
+queryParams:
+  analyse: oui
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: beforeRequest
+    code: if (String(pm.collectionVariables.get("fj_run_ai")) !== "true") { console.warn("IA désactivée dans les variables"); pm.execution.skipRequest(); }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.total", () => { pm.expect(j.total).to.eql(1); });
+
+      }
+    language: text/javascript
+order: 3000

@@ -1,0 +1,3 @@
+$kind: collection
+description: "Offres propres au parcours : acceptation, rejet, retrait, fermée, expirée et offre d’un autre recruteur."
+order: 3000

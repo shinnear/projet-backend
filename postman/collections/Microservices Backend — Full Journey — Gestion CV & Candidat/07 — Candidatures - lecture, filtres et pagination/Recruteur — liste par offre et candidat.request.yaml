@@ -1,0 +1,27 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/candidatures/offre/{{fj_oa}}?page=1&limit=1&statut=envoyée&candidatId={{fj_c1_id}}"
+method: GET
+queryParams:
+  page: "1"
+  limit: "1"
+  statut: envoyée
+  candidatId: "{{fj_c1_id}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_r1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.total", () => { pm.expect(j.total).to.eql(1); });
+      pm.test("j.page", () => { pm.expect(j.page).to.eql(1); });
+      pm.test("j.pages", () => { pm.expect(j.pages).to.eql(1); });
+      pm.test("Taille de la page", () => { pm.expect(j.candidatures).to.be.an("array"); pm.expect(j.candidatures.length).to.be.at.most(1); });
+
+      }
+    language: text/javascript
+order: 11000

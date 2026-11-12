@@ -1,0 +1,46 @@
+$kind: http-request
+description: |-
+  Étape 12/34.
+
+  Modifier le titre, détailler l’expérience et ajouter une compétence. L’ancien résultat IA est supprimé et le PDF est régénéré.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/cvs/{{fj_cv}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "titre": "CV Journey {{fj_run}} — Backend confirmé",
+      "competences": [
+        "Node.js",
+        "MongoDB",
+        "Express"
+      ],
+      "experiences": [
+        {
+          "poste": "Développeur stagiaire",
+          "entreprise": "Entreprise de démonstration",
+          "dateDebut": "2025-07-01",
+          "dateFin": "2025-08-31",
+          "description": "Développement d’une API Express de gestion des candidatures : authentification JWT, validation des données, génération de PDF et notifications email. Tests des endpoints avec Postman."
+        }
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("CV modifi\u00e9 et analyse invalid\u00e9e", () => { pm.expect(j.cv.titre).to.include("Backend confirmé"); pm.expect(j.cv).not.to.have.property("analyseIA"); pm.expect(j.cv).not.to.have.property("pdf"); });
+
+      }
+    language: text/javascript
+order: 6000

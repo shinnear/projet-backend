@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Étape 08/34.
+
+  Afficher les informations enregistrées, sans le fichier PDF dans le JSON.
+
+  Exécuter avec Send après l’étape précédente. Le token du bon rôle et les identifiants sont automatiques.
+url: "{{fj_candidature_url}}/cvs/{{fj_cv}}"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("Donn\u00e9es du CV", () => { pm.expect(j._id).to.eql(pm.variables.get("fj_cv")); pm.expect(j.competences).to.include("Node.js"); pm.expect(j).not.to.have.property("pdf"); });
+
+      }
+    language: text/javascript
+order: 2000

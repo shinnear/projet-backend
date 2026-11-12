@@ -1,0 +1,22 @@
+$kind: http-request
+name: "Autre recruteur : aucune fuite de statistiques"
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/candidatures/statistiques/recruteur"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_r2_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.total", () => { pm.expect(j.total).to.eql(0); });
+      pm.test("j.parStatut", () => { pm.expect(j.parStatut).to.eql({"envoyée": 0, "vue": 0, "acceptée": 0, "rejetée": 0}); });
+      pm.test("j.tauxAcceptation", () => { pm.expect(j.tauxAcceptation).to.eql(0); });
+
+      }
+    language: text/javascript
+order: 8000

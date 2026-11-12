@@ -1,9 +1,0 @@
-$kind: http-request
-url: "{{baseUrl}}/api/offres"
-method: GET
-headers:
-  Authorization: Bearer {{tokenCandidat}}
-scripts:
-  - type: afterResponse
-    code: pm.test('Get offres 200', () => pm.response.to.have.status(200));
-order: 2000

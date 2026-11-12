@@ -1,0 +1,14 @@
+$kind: http-request
+name: "Candidat : statistiques recruteur interdites"
+description: "HTTP attendu : 403. "
+url: "{{fj_candidature_url}}/candidatures/statistiques/recruteur"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 403", () => { pm.response.to.have.status(403); });
+    language: text/javascript
+order: 10000

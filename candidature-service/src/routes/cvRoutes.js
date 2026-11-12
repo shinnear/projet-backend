@@ -3,7 +3,6 @@ const router = express.Router();
 
 const {
   createCV,
-  getCVsByUser,
   getCVById,
   updateCV,
   deleteCV,
@@ -11,15 +10,33 @@ const {
   analyserCV
 } = require('../controllers/cvController');
 
-const { authMiddleware } = require('../middleware/auth');
+const {
+  getCVsByUser
+} = require('../controllers/listeCVController');
+
+const {
+  authMiddleware
+} = require('../middleware/auth');
 
 router.post('/cvs', authMiddleware, createCV);
 
-router.get('/cvs/user/:userId', authMiddleware, getCVsByUser);
+router.get(
+  '/cvs/user/:userId',
+  authMiddleware,
+  getCVsByUser
+);
 
-router.post('/cvs/:id/analyse', authMiddleware, analyserCV);
+router.post(
+  '/cvs/:id/analyse',
+  authMiddleware,
+  analyserCV
+);
 
-router.get('/cvs/:id/pdf', authMiddleware, telechargerPdfCV);
+router.get(
+  '/cvs/:id/pdf',
+  authMiddleware,
+  telechargerPdfCV
+);
 
 router.get('/cvs/:id', authMiddleware, getCVById);
 

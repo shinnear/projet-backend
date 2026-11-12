@@ -1,0 +1,35 @@
+$kind: http-request
+description: "HTTP attendu : 200. Échec bloquant pour les étapes dépendantes."
+url: "{{fj_candidature_url}}/health"
+method: GET
+auth:
+  type: noauth
+scripts:
+  - type: beforeRequest
+    code: |-
+      const email = String(pm.collectionVariables.get('fj_notification_email') || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        pm.execution.setNextRequest(null); pm.execution.skipRequest();
+        throw new Error('Avant Run : collection > Variables > fj_notification_email = votre adresse email de réception.');
+      }
+      const run = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
+      const set = (k,val) => { pm.collectionVariables.set(k,val); pm.variables.set(k,val); };
+      ["fj_ai_date", "fj_ai_last_start", "fj_app_a", "fj_app_b", "fj_app_c", "fj_app_c2", "fj_c1_email", "fj_c1_id", "fj_c1_token", "fj_c2_email", "fj_c2_id", "fj_c2_token", "fj_closed", "fj_cv", "fj_cv2", "fj_cv_other", "fj_expired", "fj_oa", "fj_ob", "fj_oc", "fj_other", "fj_r1_email", "fj_r1_id", "fj_r1_token", "fj_r2_email", "fj_r2_id", "fj_r2_token", "fj_run", "fj_today", "fj_tomorrow"].forEach(k => { pm.collectionVariables.unset(k); pm.variables.unset(k); });
+      set('fj_run',run);
+      set('fj_today',new Date().toISOString().slice(0,10));
+      set('fj_tomorrow',new Date(Date.now()+86400000).toISOString().slice(0,10));
+      ['c1','c2','r1','r2'].forEach(k=>set('fj_'+k+'_email', 'journey.'+k+'.'+run+'@example.com'));
+      set('fj_notification_email',email);
+      console.log('Parcours démarré :',run);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.status", () => { pm.expect(j.status).to.eql("ok"); });
+
+      }
+      if (pm.response.code !== 200) { console.error("Prérequis échoué : arrêt du parcours."); pm.execution.setNextRequest(null); }
+    language: text/javascript
+order: 1000

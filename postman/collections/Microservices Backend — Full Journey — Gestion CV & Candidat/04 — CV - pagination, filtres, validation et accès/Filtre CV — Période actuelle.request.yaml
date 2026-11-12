@@ -1,0 +1,22 @@
+$kind: http-request
+description: "HTTP attendu : 200. "
+url: "{{fj_candidature_url}}/cvs/user/{{fj_c1_id}}?dateDebut={{fj_today}}&dateFin={{fj_tomorrow}}"
+method: GET
+queryParams:
+  dateDebut: "{{fj_today}}"
+  dateFin: "{{fj_tomorrow}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{fj_c1_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP 200", () => { pm.response.to.have.status(200); });
+      if (pm.response.code === 200) {
+       const j = pm.response.json();
+      pm.test("j.total", () => { pm.expect(j.total).to.eql(2); });
+
+      }
+    language: text/javascript
+order: 8000

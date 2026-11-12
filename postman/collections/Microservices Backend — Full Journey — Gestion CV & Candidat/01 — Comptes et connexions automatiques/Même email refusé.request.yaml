@@ -1,0 +1,23 @@
+$kind: http-request
+description: "HTTP attendu : 409. "
+url: "{{fj_user_url}}/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nom": "Test",
+      "prenom": "Test",
+      "email": "{{fj_c1_email}}",
+      "password": "{{fj_password}}",
+      "role": "candidat"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: pm.test("HTTP 409", () => { pm.response.to.have.status(409); });
+    language: text/javascript
+order: 9000
