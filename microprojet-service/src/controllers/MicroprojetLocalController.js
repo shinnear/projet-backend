@@ -226,15 +226,282 @@ const enregistrerScoreEcologique = async (req, res) => {
   }
 };
 
+const rechercherMicroprojets = async (req, res) => {
+  try {
+    const { mot } = req.query;
+
+    if (!mot || typeof mot !== "string" || !mot.trim()) {
+      return res.status(400).json({
+        message: "Le mot de recherche est obligatoire"
+      });
+    }
+
+    const motSecurise = mot.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const microprojets = await Microprojet.find({
+      titre: {
+        $regex: motSecurise,
+        $options: "i"
+      }
+    });
+
+    return res.status(200).json({
+      nombreResultats: microprojets.length,
+      microprojets
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+
+
+const trierMicroprojets = async (req, res) => {
+  try {
+    const { ordre = "asc" } = req.query;
+
+    if (!["asc", "desc"].includes(ordre)) {
+      return res.status(400).json({
+        message: "L'ordre doit être asc ou desc"
+      });
+    }
+
+    const direction = ordre === "asc" ? 1 : -1;
+
+    const microprojets = await Microprojet.find()
+      .sort({ budget: direction, _id: 1 });
+
+    return res.status(200).json({
+      ordre,
+      nombreResultats: microprojets.length,
+      microprojets
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+
+const statistiquesMicroprojets = async (req, res) => {
+  try {
+    const resultats = await Microprojet.aggregate([
+      {
+        $group: {
+          _id: null,
+          nombreTotal: { $sum: 1 },
+          budgetTotal: { $sum: "$budget" },
+          budgetMoyen: { $avg: "$budget" },
+          budgetMinimum: { $min: "$budget" },
+          budgetMaximum: { $max: "$budget" }
+        }
+      }
+    ]);
+
+    const parStatut = await Microprojet.aggregate([
+      {
+        $group: {
+          _id: "$statut",
+          nombre: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+
+    const stats = resultats[0] || {
+      nombreTotal: 0,
+      budgetTotal: 0,
+      budgetMoyen: 0,
+      budgetMinimum: 0,
+      budgetMaximum: 0
+    };
+
+    return res.status(200).json({
+      nombreTotal: stats.nombreTotal,
+      budgetTotal: stats.budgetTotal,
+      budgetMoyen: Math.round(stats.budgetMoyen * 100) / 100,
+      budgetMinimum: stats.budgetMinimum,
+      budgetMaximum: stats.budgetMaximum,
+      projetsParStatut: parStatut
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+const paginerMicroprojets = async (req, res) => {
+  try {
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 5);
+
+    // Vérifier les paramètres
+    if (
+      !Number.isSafeInteger(page) ||
+      !Number.isSafeInteger(limit) ||
+      page < 1 ||
+      limit < 1 ||
+      limit > 100
+    ) {
+      return res.status(400).json({
+        message: "Page invalide ou limite hors de 1 à 100"
+      });
+    }
+
+    // Nombre de documents à ignorer
+    const skip = (page - 1) * limit;
+
+    if (!Number.isSafeInteger(skip)) {
+      return res.status(400).json({
+        message: "Numéro de page trop élevé"
+      });
+    }
+
+    // Nombre total de microprojets
+    const total = await Microprojet.countDocuments();
+
+    // Récupérer uniquement les projets de cette page
+    const microprojets = await Microprojet.find()
+      .sort({ dateCreation: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return res.status(200).json({
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      microprojets
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+
+const filtrerMicroprojets = async (req, res) => {
+  try {
+    const {
+      statut,
+      budgetMin,
+      budgetMax,
+      scoreMin
+    } = req.query;
+
+    const filtre = {};
+
+    // 1. Filtrer par statut
+    if (statut !== undefined) {
+      if (!["En attente", "Approuvé", "Rejeté"].includes(statut)) {
+        return res.status(400).json({
+          message: "Statut invalide"
+        });
+      }
+
+      filtre.statut = statut;
+    }
+
+    // 2. Vérifier les valeurs numériques
+    const valeurs = { budgetMin, budgetMax, scoreMin };
+
+    for (const [nom, valeur] of Object.entries(valeurs)) {
+      if (valeur !== undefined) {
+        if (
+          valeur.trim() === "" ||
+          !Number.isFinite(Number(valeur)) ||
+          Number(valeur) < 0
+        ) {
+          return res.status(400).json({
+            message: `${nom} doit être un nombre positif`
+          });
+        }
+      }
+    }
+
+    // 3. Filtrer par budget
+    if (budgetMin !== undefined || budgetMax !== undefined) {
+      filtre.budget = {};
+
+      if (budgetMin !== undefined) {
+        filtre.budget.$gte = Number(budgetMin);
+      }
+
+      if (budgetMax !== undefined) {
+        filtre.budget.$lte = Number(budgetMax);
+      }
+
+      if (
+        budgetMin !== undefined &&
+        budgetMax !== undefined &&
+        Number(budgetMin) > Number(budgetMax)
+      ) {
+        return res.status(400).json({
+          message: "budgetMin ne peut pas dépasser budgetMax"
+        });
+      }
+    }
+
+    // 4. Filtrer par score écologique
+    if (scoreMin !== undefined) {
+      if (Number(scoreMin) > 100) {
+        return res.status(400).json({
+          message: "scoreMin ne peut pas dépasser 100"
+        });
+      }
+
+      filtre.scoreEcologique = {
+        $gte: Number(scoreMin),
+        $lte: 100
+      };
+    }
+
+    // 5. Rechercher les projets correspondants
+    const microprojets = await Microprojet.find(filtre);
+
+    return res.status(200).json({
+      nombreResultats: microprojets.length,
+      filtresAppliques: filtre,
+      microprojets
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
 // Exporter les fonctions
+
 module.exports = {
   addMicroprojet,
   showAllMicroprojets,
   showMicroprojet,
   updateMicroprojet,
   deleteMicroprojet,
+
+  // Métiers simples
+  rechercherMicroprojets,
+  trierMicroprojets,
+  statistiquesMicroprojets,
+  paginerMicroprojets,
+  filtrerMicroprojets,
+
+  // Métiers avancés
   verifierDoublons,
   evaluerScoreEcologique,
   enregistrerScoreEcologique
-
 };
+
